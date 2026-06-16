@@ -1,0 +1,30 @@
+name: 'dbt_portfolio_tracker'
+version: '1.0.0'
+
+profile: 'dbt-portfolio-tracker'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:         # directories to be removed by `dbt clean`
+  - "target"
+  - "dbt_packages"
+
+
+models:
+  portfolio_tracker:
+    staging:
+      +schema: staging
+      +materialized: view
+
+    entity:
+      +schema: entity
+      +materialized: table
+    
+    mart:
+      +schema: mart
+      +materialized: table

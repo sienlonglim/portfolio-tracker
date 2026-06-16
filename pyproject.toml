@@ -6,7 +6,11 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "dagster>=1.13.9",
+    "dagster-dbt>=0.29.9",
+    "dagster-duckdb>=0.29.9",
+    "dagster-webserver>=1.13.9",
     "dbt-core>=1.11.11",
+    "dbt-duckdb>=1.10.1",
     "duckdb>=1.5.3",
     "pandas>=3.0.3",
 ]

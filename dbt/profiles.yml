@@ -1,0 +1,14 @@
+dbt-portfolio-tracker:
+  target: dev  # default target to use when running dbt commands without specifying --target
+  outputs:
+    dev:
+      type: duckdb
+      path: "local.duckdb"
+      schema: main
+      threads: 4
+
+    prod:
+      type: duckdb
+      database: portfolio_tracker
+      path: "{{ env_var('MOTHERDUCK_DB_PATH') }}?motherduck_token={{ env_var('MOTHERDUCK_TOKEN') }}"
+      threads: 8
