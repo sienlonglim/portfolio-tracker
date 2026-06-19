@@ -17,7 +17,7 @@ class StockPriceConfig(Config):
         description="Target S3 bucket name to write the output dataset to.",
     )
     s3_prefix: str = Field(
-        default="portfolio-tracker-market_data/stock_prices/open_close",
+        default="portfolio-tracker/market_data/stock_prices/open_close",
         description="S3 key prefix where output files will be stored.",
     )
     period: str = Field(

@@ -51,7 +51,7 @@ def s3_stock_open_close_prices(
     stock_open_close_prices: pd.DataFrame
 ) -> dg.MaterializeResult:
     epoch_time = int(datetime.now(UTC).timestamp())
-    key = f"{create_s3_date_directory()}/{epoch_time}.parquet"
+    key = f"{config.s3_prefix}/{create_s3_date_directory()}/{epoch_time}.parquet"
 
     upload_parquet_to_s3(
         s3=s3,
