@@ -10,8 +10,9 @@ from . import (
     assets_dbt,
     assets_prices
 )
-from .jobs import jobs
 from .constants import DBT_PROJECT_DIR
+from .jobs import jobs
+from .resources import MotherDuckS3Resource
 
 
 defs = Definitions(
@@ -24,5 +25,11 @@ defs = Definitions(
             aws_secret_access_key=EnvVar("AWS_SECRET_ACCESS_KEY"),
             region_name=EnvVar("AWS_REGION"),
         ),
+        "motherduck": MotherDuckS3Resource(
+            motherduck_token=EnvVar("MOTHERDUCK_TOKEN"),
+            aws_access_key_id=EnvVar("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=EnvVar("AWS_SECRET_ACCESS_KEY"),
+            aws_region=EnvVar("AWS_REGION"),
+        )
     },
 )

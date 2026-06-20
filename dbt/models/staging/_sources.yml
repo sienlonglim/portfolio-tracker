@@ -1,0 +1,18 @@
+version: 2
+
+sources:
+  - name: raw
+    database: portfolio-tracker
+    schema: raw
+    tables:
+      - name: stock_prices_open_close
+        description: "Open and close prices for stocks (daily)."
+        columns:
+          - name: data
+            description: "A single Parquet object. File contains a wide range of columns depending on the original file."
+          - name: meta_file_name
+            description: "Meta column describing the name of the file in S3."
+          - name: meta_file_modified
+            description: "Meta column describing the last modified date of the file in S3."
+          - name: meta_file_scan
+            description: "Meta column describing when the file was last ingested."

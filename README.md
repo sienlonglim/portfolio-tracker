@@ -15,8 +15,26 @@ uv sync
 Create a `.env` file in the root folder with the following environmental variables.
 
 ```shell
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=
 DBT_ENGINE_PROFILES_DIR=$PWD/dbt
 DBT_PROJECT_DIR=$PWD/dbt
 MOTHERDUCK_DB_PATH="md:portfolio_tracker"  # Create this database in MotherDuck
-MOTHERDUCK_TOKEN=<your_motherduck_token>
+MOTHERDUCK_TOKEN=
+```
+
+## Running Dagster Ingestion
+
+UI
+
+```
+dagster dev -w workspace.yaml
+```
+
+Headless
+
+```
+dagster-daemon run
+dagster job execute -j <job_name>> -w workspace.yaml
 ```

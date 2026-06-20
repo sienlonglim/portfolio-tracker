@@ -9,6 +9,7 @@ from .s3_utils import (
     create_s3_date_directory,
     upload_parquet_to_s3
 )
+from .resources import MotherDuckS3Resource
 from ..portfolio_tracker.market_data import MarketDataClient
 
 
@@ -61,3 +62,31 @@ def s3_stock_open_close_prices(
         index=False,
     )
     context.log.info(f"Wrote {len(stock_open_close_prices)} rows to s3://{config.s3_bucket}/{key}")
+
+
+@dg.asset(
+    description="Copies stock open and close prices from S3 into a MotherDuck table.",
+    group_name="market_data",
+    kinds={"s3", "motherduck"},
+    deps=["s3_stock_open_close_prices"]
+)
+def copy_into_duckdb(
+    context: dg.AssetExecutionContext,
+    config: StockPriceConfig,
+    motherduck: MotherDuckS3Resource,
+) -> None:
+    context.log.info(
+        f"Copying data into MotherDuck database '{config.motherduck_database}', "
+        f"table '{config.motherduck_schema}.{config.motherduck_table}'"
+    )
+    # This is currently no idempotent yet
+    motherduck.copy_into_duckdb(
+        s3_path=f"s3://{config.s3_bucket}/{config.s3_prefix}",
+        database=config.motherduck_database,
+        table_name=config.motherduck_table,
+        schema=config.motherduck_schema,
+        file_format="parquet",
+        hive_partitioning=False,
+        scope=None
+    )
+    context.log.info("Success")

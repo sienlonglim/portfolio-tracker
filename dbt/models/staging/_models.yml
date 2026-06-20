@@ -1,0 +1,6 @@
+version: 2
+
+models:
+  - name: stg__portfolio_tracker__stock_prices_open_close
+    description: "Staging model for stock prices (open and close)."
+    columns:
