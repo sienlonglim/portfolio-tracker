@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS {{ meta_schema }}.{{ meta_table }} (
     target_schema VARCHAR NOT NULL,
     target_table VARCHAR NOT NULL,
-    file_path VARCHAR NOT NULL,
-    loaded_at TIMESTAMP DEFAULT now()
+    metafile_name VARCHAR NOT NULL,
+    metafile_modified TIMESTAMP NOT NULL
 )

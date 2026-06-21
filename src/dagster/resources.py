@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+import datetime
 
 import dagster as dg
 import duckdb
@@ -22,6 +23,19 @@ class MotherDuckS3Resource(dg.ConfigurableResource):
             yield conn
         finally:
             conn.close()
+
+    @contextmanager
+    def transaction(self, conn: duckdb.DuckDBPyConnection):
+        """
+        Context manager for DuckDB transactions.
+        """
+        conn.execute("BEGIN TRANSACTION")
+        try:
+            yield conn
+            conn.execute("COMMIT")
+        except Exception:
+            conn.execute("ROLLBACK")
+            raise
 
     def _check_file_format(self, file_format: str) -> None:
         file_format = file_format.lower()
@@ -92,12 +106,14 @@ class MotherDuckS3Resource(dg.ConfigurableResource):
         full_refresh: bool = False
     ) -> list[str]:
         pattern = f"{s3_path.rstrip('/')}/**/*.{file_format}"
+        logger = dg.get_dagster_logger()
         source_files = [
             row[0]
             for row in conn.execute(
                 render_sql("list_source_files.sql.j2", pattern=pattern)
             ).fetchall()
         ]
+        logger.info(f"Found {len(source_files)} source files with S3 pattern '{pattern}'")
 
         if full_refresh:
             files_to_load = source_files
@@ -118,7 +134,7 @@ class MotherDuckS3Resource(dg.ConfigurableResource):
 
         if not files_to_load:
             return []
-
+        logger.info(f"Files to load into MotherDuck table '{schema}.{table_name}': {files_to_load}")
         return files_to_load
 
     def copy_into_duckdb(
@@ -142,6 +158,7 @@ class MotherDuckS3Resource(dg.ConfigurableResource):
             full_refresh: Whether to perform a full refresh of the table. If True, the table will be recreated; if False, new data will be appended.
             scope: Optional scope for the S3 secret. If provided, the secret will be created within the given bucket scope. If not provided, the secret will be created at the global level for all buckets.
         """
+        logger = dg.get_dagster_logger()
         self._check_file_format(file_format)
         # Get connection and create S3 secret if needed
         with self.motherduck_connection(database=database) as conn:
@@ -156,50 +173,56 @@ class MotherDuckS3Resource(dg.ConfigurableResource):
                 file_format=file_format
             )
             if not files_to_load:
-                
+                logger.info("No new files to load. Exiting without making changes.")
                 return
 
-            # TODO: Add rollback logic in case of failure partway through the load process
             # Creates and replace if full refresh, otherwise creates if not exists and appends
-            conn.execute(
-                render_sql(
-                    "create_table.sql.j2",
-                    schema=schema,
-                    table=table_name,
-                    file_format=file_format,
-                    files=files_to_load,
-                    full_refresh=full_refresh,
-                )
-            )
-            if not full_refresh:
+            with self.transaction(conn) as conn:
+                logger.info(f"Running transaction with full_refresh={full_refresh}")
+                metafile_modified = datetime.datetime.now(datetime.UTC).isoformat()
                 conn.execute(
                     render_sql(
-                        "insert_files.sql.j2",
+                        "create_table.sql.j2",
                         schema=schema,
                         table=table_name,
                         file_format=file_format,
                         files=files_to_load,
+                        full_refresh=full_refresh,
+                        metafile_modified=metafile_modified,
                     )
                 )
+                if not full_refresh:
+                    conn.execute(
+                        render_sql(
+                            "insert_files.sql.j2",
+                            schema=schema,
+                            table=table_name,
+                            file_format=file_format,
+                            files=files_to_load,
+                            metafile_modified=metafile_modified,
+                        )
+                    )
 
-            # Metadata handling
-            if full_refresh:
+                # Metadata handling
+                if full_refresh:
+                    conn.execute(
+                        render_sql(
+                            "delete_loaded_files.sql.j2",
+                            meta_schema=self.metadata_schema,
+                            meta_table=self._metadata_table_naming(schema, table_name),
+                            target_schema=schema,
+                            target_table=table_name,
+                        )
+                    )
                 conn.execute(
                     render_sql(
-                        "delete_loaded_files.sql.j2",
+                        "record_loaded_files.sql.j2",
                         meta_schema=self.metadata_schema,
                         meta_table=self._metadata_table_naming(schema, table_name),
                         target_schema=schema,
                         target_table=table_name,
+                        files=files_to_load,
+                        metafile_modified=metafile_modified,
                     )
                 )
-            conn.execute(
-                render_sql(
-                    "record_loaded_files.sql.j2",
-                    meta_schema=self.metadata_schema,
-                    meta_table=self._metadata_table_naming(schema, table_name),
-                    target_schema=schema,
-                    target_table=table_name,
-                    files=files_to_load,
-                )
-            )
+                logger.info("Committed transaction successfully")

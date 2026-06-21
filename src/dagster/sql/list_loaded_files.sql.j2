@@ -1,4 +1,4 @@
-SELECT file_path
+SELECT metafile_name
 FROM {{ meta_schema }}.{{ meta_table }}
 WHERE target_schema = {{ target_schema | sqllit }}
   AND target_table = {{ target_table | sqllit }}

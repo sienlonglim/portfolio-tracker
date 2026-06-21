@@ -8,7 +8,7 @@ read_json_auto([{{ files | map('sqllit') | join(', ') }}], filename=true)
 {%- endif -%}
 {%- endmacro %}
 
-{% macro source_select(file_format, files) -%}
-SELECT * RENAME (filename AS file_path), now()::TIMESTAMP AS loaded_at
+{% macro source_select(file_format, files, metafile_modified) -%}
+SELECT * RENAME (filename AS metafile_name), '{{ metafile_modified }}'::TIMESTAMP AS metafile_modified
 FROM {{ reader(file_format, files) }}
 {%- endmacro %}
