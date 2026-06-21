@@ -1,8 +1,8 @@
 {% import 'macros.sql.j2' as m %}
 {% if full_refresh %}
 CREATE OR REPLACE TABLE {{ schema }}.{{ table }} AS
-SELECT * FROM {{ m.reader(file_format, files) }}
+{{ m.source_select(file_format, files) }}
 {% else %}
 CREATE TABLE IF NOT EXISTS {{ schema }}.{{ table }} AS
-SELECT * FROM {{ m.reader(file_format, files) }} LIMIT 0
+{{ m.source_select(file_format, files) }} LIMIT 0
 {% endif %}

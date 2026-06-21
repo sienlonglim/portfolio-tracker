@@ -1,9 +1,14 @@
 {% macro reader(file_format, files) -%}
 {%- if file_format == 'parquet' -%}
-read_parquet([{{ files | map('sqllit') | join(', ') }}])
+read_parquet([{{ files | map('sqllit') | join(', ') }}], filename=true)
 {%- elif file_format == 'csv' -%}
-read_csv([{{ files | map('sqllit') | join(', ') }}], header=true, auto_detect=true)
+read_csv([{{ files | map('sqllit') | join(', ') }}], header=true, auto_detect=true, filename=true)
 {%- elif file_format == 'json' -%}
-read_json_auto([{{ files | map('sqllit') | join(', ') }}])
+read_json_auto([{{ files | map('sqllit') | join(', ') }}], filename=true)
 {%- endif -%}
+{%- endmacro %}
+
+{% macro source_select(file_format, files) -%}
+SELECT * RENAME (filename AS file_path), now()::TIMESTAMP AS loaded_at
+FROM {{ reader(file_format, files) }}
 {%- endmacro %}

@@ -159,6 +159,8 @@ class MotherDuckS3Resource(dg.ConfigurableResource):
                 
                 return
 
+            # TODO: Add rollback logic in case of failure partway through the load process
+            # Creates and replace if full refresh, otherwise creates if not exists and appends
             conn.execute(
                 render_sql(
                     "create_table.sql.j2",
@@ -180,6 +182,7 @@ class MotherDuckS3Resource(dg.ConfigurableResource):
                     )
                 )
 
+            # Metadata handling
             if full_refresh:
                 conn.execute(
                     render_sql(
