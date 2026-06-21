@@ -1,0 +1,3 @@
+{% import 'macros.sql.j2' as m %}
+INSERT INTO {{ schema }}.{{ table }}
+SELECT * FROM {{ m.reader(file_format, files) }}

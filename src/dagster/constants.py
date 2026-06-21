@@ -51,3 +51,7 @@ class StockPriceConfig(Config):
         default=MOTHERDUCK_SCHEMA,
         description="MotherDuck schema name to copy the data into.",
     )
+    full_refresh: bool = Field(
+        default=False,
+        description="Whether to perform a full refresh of the MotherDuck table. If True, the table will be recreated; if False, new data will be appended.",
+    )

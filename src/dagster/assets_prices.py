@@ -79,14 +79,13 @@ def copy_into_duckdb(
         f"Copying data into MotherDuck database '{config.motherduck_database}', "
         f"table '{config.motherduck_schema}.{config.motherduck_table}'"
     )
-    # This is currently no idempotent yet
     motherduck.copy_into_duckdb(
         s3_path=f"s3://{config.s3_bucket}/{config.s3_prefix}",
         database=config.motherduck_database,
         table_name=config.motherduck_table,
         schema=config.motherduck_schema,
         file_format="parquet",
-        hive_partitioning=False,
-        scope=None
+        scope=None,
+        full_refresh=config.full_refresh,
     )
     context.log.info("Success")

@@ -1,0 +1,4 @@
+INSERT INTO {{ meta_schema }}.{{ meta_table }} (target_schema, target_table, file_path) VALUES
+{% for f in files %}
+({{ target_schema | sqllit }}, {{ target_table | sqllit }}, {{ f | sqllit }}){{ "," if not loop.last else "" }}
+{% endfor %}

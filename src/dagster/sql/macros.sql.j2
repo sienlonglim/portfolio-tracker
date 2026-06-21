@@ -1,0 +1,9 @@
+{% macro reader(file_format, files) -%}
+{%- if file_format == 'parquet' -%}
+read_parquet([{{ files | map('sqllit') | join(', ') }}])
+{%- elif file_format == 'csv' -%}
+read_csv([{{ files | map('sqllit') | join(', ') }}], header=true, auto_detect=true)
+{%- elif file_format == 'json' -%}
+read_json_auto([{{ files | map('sqllit') | join(', ') }}])
+{%- endif -%}
+{%- endmacro %}
