@@ -28,13 +28,13 @@ MOTHERDUCK_TOKEN=
 
 UI
 
-```
+```shell
 dagster dev -w workspace.yaml
 ```
 
 Headless
 
-```
+```shell
 dagster-daemon run
 dagster job execute -j <job_name>> -w workspace.yaml
 ```

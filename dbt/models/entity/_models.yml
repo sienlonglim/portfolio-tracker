@@ -1,0 +1,39 @@
+version: 2
+
+models:
+  - name: fct_portfolio_positions.sql
+    description: "All portfolio positions."
+    columns:
+      - name: id
+        description: "Unique identifier for the portfolio position."
+      - name: account
+        description: "Account associated with the portfolio position."
+      - name: ticker
+        description: "Stock ticker symbol."
+      - name: shares
+        description: "Number of shares held in the portfolio position."
+      - name: buy_date
+        description: "Date when the shares were purchased."
+      - name: buy_price
+        description: "Price at which the shares were purchased."
+      - name: close_date
+        description: "Date when the portfolio position was closed, null if still open."
+      - name: close_price
+        description: "Price at which the shares were sold, null if still open."
+  - name: fct_stock_open_close_prices
+    description: "Daily stock prices and volumes."
+    columns:
+      - name: ticker
+        description: "Unique identifier for the stock."
+      - name: date
+        description: "Date of the stock price."
+      - name: open_price
+        description: "Opening price of the stock on the given date."
+      - name: high_price
+        description: "Highest price of the stock on the given date."
+      - name: low_price
+        description: "Lowest price of the stock on the given date."
+      - name: close_price
+        description: "Closing price of the stock on the given date."
+      - name: traded_volume
+        description: "Total volume of the stock traded on the given date."

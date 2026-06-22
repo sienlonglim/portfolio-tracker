@@ -3,6 +3,7 @@
 
 # notebooks
 *.ipynb
+.notebooks/*
 
 # dbt
 *.user.yml

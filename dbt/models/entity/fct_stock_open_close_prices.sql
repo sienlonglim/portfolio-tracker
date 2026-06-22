@@ -1,0 +1,1 @@
+select * from {{ ref('stg_portfolio_tracker__stock_open_close_prices') }}

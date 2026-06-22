@@ -4,7 +4,6 @@ dbt-portfolio-tracker:
     dev:
       type: duckdb
       path: "local.duckdb"
-      schema: main
       threads: 4
 
     prod:

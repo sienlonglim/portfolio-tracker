@@ -1,6 +1,24 @@
 version: 2
 
 models:
-  - name: stg__portfolio_tracker__stock_prices_open_close
+  - name: stg_portfolio_tracker__stock_open_close_prices
     description: "Staging model for stock prices (open and close)."
     columns:
+      - name: ticker
+        description: "Unique identifier for the stock."
+      - name: date
+        description: "Date of the stock price."
+      - name: open_price
+        description: "Opening price of the stock on the given date."
+      - name: high_price
+        description: "Highest price of the stock on the given date."
+      - name: low_price
+        description: "Lowest price of the stock on the given date."
+      - name: close_price
+        description: "Closing price of the stock on the given date."
+      - name: traded_volume
+        description: "Total volume of the stock traded on the given date."
+      - name: metafile_name
+        description: "Name of the metafile from which the data was sourced."
+      - name: metafile_modified
+        description: "Timestamp of when the metafile was last modified."
