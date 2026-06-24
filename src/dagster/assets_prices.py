@@ -24,13 +24,22 @@ def stock_open_close_prices(
     config: StockPriceConfig,
     motherduck: MotherDuckS3Resource,
 ) -> dg.MaterializeResult:
+    # Default run behaviour: If no tickers are provided, fetch all tickers based on missing data in the MotherDuck table.
     if not config.tickers:
-        context.log.info("No ticker list passed, defaulting to fetching all tickers based on missing data in DB.")
-        df_ticker_max_dates = motherduck.query(
-            database=config.motherduck_database,
-            sql=render_sql("get_ticker_max_dates.sql.j2"),
-            as_dataframe=True
-        )
+        if config.full_refresh:
+            context.log.info("Full refresh requested, fetching all ticker positions with max historical data.")
+            df_ticker_max_dates = motherduck.query(
+                database=config.motherduck_database,
+                sql=render_sql("get_all_ticker_positions.sql.j2"),
+                as_dataframe=True
+            )
+        else:
+            context.log.info("No ticker list passed, defaulting to fetching all tickers based on missing data in DB.")
+            df_ticker_max_dates = motherduck.query(
+                database=config.motherduck_database,
+                sql=render_sql("get_ticker_max_dates.sql.j2"),
+                as_dataframe=True
+            )
         all_frames = []
         tickers = []
         market_data_client = MarketDataClient(logger=context.log)
@@ -55,7 +64,8 @@ def stock_open_close_prices(
             pd.concat(all_frames, ignore_index=True)
             if all_frames
             else pd.DataFrame(columns=["ticker", "date", "open", "close"])
-        )   
+        )
+    # Custom run behaviour: If tickers are provided, fetch data for those tickers based on the provided start/end dates or period.
     else:
         tickers = config.tickers
         market_data_client = MarketDataClient(logger=context.log, tickers=tickers)

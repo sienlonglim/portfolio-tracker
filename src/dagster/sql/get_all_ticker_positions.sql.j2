@@ -1,0 +1,5 @@
+select
+    null as max_date,
+    array_agg(sym) as tickers
+from seed.seed_portfolio_positions
+group by 1

@@ -11,7 +11,7 @@ MOTHERDUCK_TABLE = "stock_open_close_prices"
 MOTHERDUCK_SCHEMA = "raw"
 
 S3_BUCKET = "sl-python-projects"
-S3_PREFIX = "portfolio-tracker/market_data/stock_prices/open_close"
+S3_PREFIX = "portfolio-tracker/market-data/stock-prices/open-close"
 
 
 class StockPriceConfig(Config):
@@ -61,5 +61,5 @@ class StockPriceConfig(Config):
     )
     full_refresh: bool = Field(
         default=False,
-        description="Whether to perform a full refresh of the MotherDuck table. If True, the table will be recreated; if False, new data will be appended.",
+        description="Whether to perform a full refresh of the ingestion and the MotherDuck table. If True, the table will be recreated; if False, new data will be appended.",
     )
