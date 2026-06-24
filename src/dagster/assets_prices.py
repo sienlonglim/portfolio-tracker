@@ -10,6 +10,7 @@ from .s3_utils import (
     upload_parquet_to_s3
 )
 from .resources import MotherDuckS3Resource
+from .sql import render_sql
 from ..portfolio_tracker.market_data import MarketDataClient
 
 
@@ -24,27 +25,54 @@ def stock_open_close_prices(
     motherduck: MotherDuckS3Resource,
 ) -> dg.MaterializeResult:
     if not config.tickers:
-        tickers = motherduck.query(
+        context.log.info("No ticker list passed, defaulting to fetching all tickers based on missing data in DB.")
+        df_ticker_max_dates = motherduck.query(
             database=config.motherduck_database,
-            sql="select distinct sym as ticker from seed.seed_portfolio_positions",
+            sql=render_sql("get_ticker_max_dates.sql.j2"),
             as_dataframe=True
-        )["ticker"].tolist()
+        )
+        all_frames = []
+        tickers = []
+        market_data_client = MarketDataClient(logger=context.log)
+        for row in df_ticker_max_dates.itertuples(index=False):
+            row_tickers = list(row.tickers)
+            tickers.extend(row_tickers)
+            if pd.isna(row.max_date):
+                custom_args = {"period": "max"}
+            else:
+                custom_args = {
+                    "start": row.max_date.strftime("%Y-%m-%d"),
+                    "end": datetime.now().strftime("%Y-%m-%d")
+                }
+            df_temp = market_data_client.get_stock_open_close_prices_long_format(
+                tickers=row_tickers,
+                interval=config.interval,
+                auto_adjust=config.auto_adjust,
+                **custom_args
+            )  
+            all_frames.append(df_temp)
+        df_stock_prices = (
+            pd.concat(all_frames, ignore_index=True)
+            if all_frames
+            else pd.DataFrame(columns=["ticker", "date", "open", "close"])
+        )   
     else:
         tickers = config.tickers
-    context.log.info(f"Fetching stock open and close prices for tickers: {tickers}")
-    market_data_client = MarketDataClient(logger=context.log, tickers=tickers)
-    if config.start and config.end:
+        market_data_client = MarketDataClient(logger=context.log, tickers=tickers)
+        if config.start_date and config.end_date:
+            custom_args = {
+                "start": config.start_date,
+                "end": config.end_date
+            }
+        elif config.period:
+            custom_args = {"period": config.period}
+        else:
+            raise ValueError("Either start_date and end_date or period must be provided in the config.")
+        context.log.info(f"Fetching stock prices for tickers: {tickers} with custom arguments: {custom_args}")
         df_stock_prices = market_data_client.get_stock_open_close_prices_long_format(
-            start=config.start,
-            end=config.end,
             interval=config.interval,
-            auto_adjust=config.auto_adjust
-        )
-    else:
-        df_stock_prices = market_data_client.get_stock_open_close_prices_long_format(
-            period=config.period,
-            interval=config.interval,
-            auto_adjust=config.auto_adjust
+            auto_adjust=config.auto_adjust,
+            **custom_args
         )
     context.add_output_metadata(
         metadata={

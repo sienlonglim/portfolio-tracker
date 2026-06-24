@@ -1,0 +1,26 @@
+with unique_tickers as (select distinct sym as ticker from seed.seed_portfolio_positions),
+
+max_dates as (
+
+    select
+        t.ticker,
+        max(p.date) as max_date
+    from unique_tickers as t
+    left join entity.fct_stock_open_close_prices as p
+    on t.ticker = p.ticker
+    group by t.ticker
+
+),
+
+final as (
+
+    select
+        max_date,
+        array_agg(ticker) as tickers
+    from max_dates
+    group by max_date
+    order by max_date desc
+
+)
+
+select * from final

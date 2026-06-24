@@ -9,6 +9,7 @@ def _sql_literal(value: str) -> str:
     """Render a Python string as a safely-escaped SQL string literal."""
     return "'" + value.replace("'", "''") + "'"
 
+
 _JINJA_ENV = Environment(
     loader=FileSystemLoader(str(_SQL_DIR)),
     undefined=StrictUndefined,

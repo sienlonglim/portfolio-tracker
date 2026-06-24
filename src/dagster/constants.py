@@ -19,16 +19,16 @@ class StockPriceConfig(Config):
         default_factory=list,
         description="Optional list of stock tickers to fetch. If omitted, fetch all/default configured tickers.",
     )
-    start: str | None = Field(
+    start_date: str | None = Field(
         default=None,
         description="Start date for historical data in 'YYYY-MM-DD' format. Overrides period if provided.",
     )
-    end: str | None = Field(
+    end_date: str | None = Field(
         default=None,
         description="End date (inclusive) for historical data in 'YYYY-MM-DD' format. Defaults to today if not provided.",
     )
     period: str = Field(
-        default="1d",
+        default="5d",
         description="Yahoo Finance lookback period, e.g. 1d, 5d, 1mo, 3mo, 1y, max.",
     )
     interval: str = Field(

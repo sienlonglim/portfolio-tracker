@@ -47,8 +47,7 @@ class MarketDataClient(BaseModel):
         Returns:
             pd.DataFrame: A DataFrame in long format with columns: ticker, date, open, close.
         """
-        if not tickers:
-            tickers = self.tickers
+        tickers = self.tickers or tickers
         if start and end:
             self.logger.info(f"Fetching stock prices for tickers: {tickers} from {start} to {end} with interval {interval}.")
             df = yf.download(
@@ -70,7 +69,7 @@ class MarketDataClient(BaseModel):
             )
         all_rows = []
         for ticker in tickers:
-            df_temp = df[ticker].reset_index()
+            df_temp = df[ticker].reset_index().dropna(how='any')
             df_temp.insert(0, 'ticker', ticker)
             df_temp.columns = [col.lower() for col in df_temp.columns]
             all_rows.extend(df_temp.to_dict(orient='records'))
