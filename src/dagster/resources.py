@@ -3,6 +3,7 @@ import datetime
 
 import dagster as dg
 import duckdb
+import pandas as pd
 
 from .sql import render_sql
 
@@ -36,6 +37,28 @@ class MotherDuckS3Resource(dg.ConfigurableResource):
         except Exception:
             conn.execute("ROLLBACK")
             raise
+
+    def query(
+        self,
+        database: str,
+        sql: str,
+        as_dataframe: bool = False
+    ) -> list[tuple] | pd.DataFrame:
+        """
+        Execute a SQL query against a MotherDuck database.
+        Parameters:
+            database: The name of the MotherDuck database.
+            sql: The SQL query to execute.
+            as_dataframe: Whether to return the result as a pandas DataFrame.
+        Returns:
+            list[tuple] | pd.DataFrame: The result of the query as a list of tuples or a DataFrame.
+        """
+        with self.motherduck_connection(database=database) as conn:
+            if as_dataframe:
+                result = conn.execute(sql).df()
+            else:
+                result = conn.execute(sql).fetchall()
+        return result
 
     def _check_file_format(self, file_format: str) -> None:
         file_format = file_format.lower()

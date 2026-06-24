@@ -16,23 +16,39 @@ from ..portfolio_tracker.market_data import MarketDataClient
 @dg.asset(
     description="Fetches stock open and close prices from Yahoo Finance and uploads the data to S3 in Parquet format.",
     group_name="market_data",
-    kinds={"python"},
+    kinds={"python", "motherduck"},
 )
 def stock_open_close_prices(
     context: dg.AssetExecutionContext,
-    config: StockPriceConfig
+    config: StockPriceConfig,
+    motherduck: MotherDuckS3Resource,
 ) -> dg.MaterializeResult:
-    context.log.info(f"Fetching stock open and close prices for tickers: {config.tickers}")
-    market_data_client = MarketDataClient()
-    df_stock_prices = market_data_client.get_stock_open_close_prices_long_format(
-        tickers=config.tickers,
-        period=config.period,
-        interval=config.interval,
-        auto_adjust=config.auto_adjust
-    )
+    if not config.tickers:
+        tickers = motherduck.query(
+            database=config.motherduck_database,
+            sql="select distinct sym as ticker from seed.seed_portfolio_positions",
+            as_dataframe=True
+        )["ticker"].tolist()
+    else:
+        tickers = config.tickers
+    context.log.info(f"Fetching stock open and close prices for tickers: {tickers}")
+    market_data_client = MarketDataClient(logger=context.log, tickers=tickers)
+    if config.start and config.end:
+        df_stock_prices = market_data_client.get_stock_open_close_prices_long_format(
+            start=config.start,
+            end=config.end,
+            interval=config.interval,
+            auto_adjust=config.auto_adjust
+        )
+    else:
+        df_stock_prices = market_data_client.get_stock_open_close_prices_long_format(
+            period=config.period,
+            interval=config.interval,
+            auto_adjust=config.auto_adjust
+        )
     context.add_output_metadata(
         metadata={
-            "tickers": config.tickers,
+            "tickers": tickers,
             "rows": len(df_stock_prices),
             "preview": dg.MetadataValue.md(df_stock_prices.head().to_markdown(index=False)),
         }
