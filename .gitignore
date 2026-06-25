@@ -1,5 +1,6 @@
 .tmp*
 *.DS_Store
+*seed_portfolio_positions.csv
 
 # Streamlit
 .streamlit/*
