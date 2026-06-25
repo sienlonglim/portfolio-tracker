@@ -1,6 +1,9 @@
 .tmp*
 *.DS_Store
 
+# Streamlit
+.streamlit/*
+
 # notebooks
 *.ipynb
 .notebooks/*
@@ -164,6 +167,7 @@ activemq-data/
 .env
 .envrc
 .venv
+.nenv
 env/
 venv/
 ENV/

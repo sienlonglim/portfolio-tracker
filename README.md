@@ -5,9 +5,18 @@ This repository contains all the code and documentation used for portfolio-track
 ## Installation with `uv`
 
 If you need to install `uv`, refer to this [page](https://docs.astral.sh/uv/getting-started/installation/).
+Sync with dependencies and create `.venv`
 
 ```shell
 uv sync
+```
+
+For LightDash, a virtual environment for node and npm are recommended.
+
+```shell
+nodeenv .nenv
+source .nenv/bin/activate
+npm install -g @lightdash/cli
 ```
 
 ## Required Environment Variables
@@ -38,3 +47,7 @@ Headless
 dagster-daemon run
 dagster job execute -j <job_name>> -w workspace.yaml
 ```
+
+## Running LightDash
+
+TBC

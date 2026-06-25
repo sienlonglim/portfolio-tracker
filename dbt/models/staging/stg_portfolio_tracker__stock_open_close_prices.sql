@@ -2,7 +2,7 @@ with final as (
 
     select
         ticker::varchar as ticker,
-        date::date as date,
+        date::varchar as date,
         open::double as open_price,
         high::double as high_price,
         low::double as low_price,

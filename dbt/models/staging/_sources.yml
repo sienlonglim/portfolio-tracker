@@ -16,3 +16,22 @@ sources:
             description: "Meta column describing the last modified date of the file in S3."
           - name: meta_file_scan
             description: "Meta column describing when the file was last ingested."
+      - name: portfolio_positions
+        description: "Portfolio positions for all holders."
+        columns:
+          - name: id
+            description: "Unique identifier for the position."
+          - name: holder
+            description: "Name of the holder."
+          - name: account
+            description: "Account associated with the position."
+          - name: sym
+            description: "Stock symbol."
+          - name: buy_date
+            description: "Date when the stock was bought."
+          - name: buy_price
+            description: "Price at which the stock was bought."
+          - name: close_price
+            description: "Price at which the stock was sold or closed."
+          - name: close_date
+            description: "Date when the stock was sold or closed."

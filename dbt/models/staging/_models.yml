@@ -22,3 +22,26 @@ models:
         description: "Name of the metafile from which the data was sourced."
       - name: metafile_modified
         description: "Timestamp of when the metafile was last modified."
+  - name: stg_portfolio_tracker__portfolio_positions
+    description: "Staging model for portfolio positions."
+    columns:
+      - name: id
+        description: "Unique identifier for the portfolio position."
+      - name: holder
+        description: "Holder of the portfolio position."
+      - name: account
+        description: "Account associated with the portfolio position."
+      - name: ticker
+        description: "Stock ticker symbol."
+      - name: shares
+        description: "Number of shares held in the portfolio position."
+      - name: buy_date
+        description: "Date when the shares were purchased."
+      - name: buy_price
+        description: "Price at which the shares were purchased."
+      - name: close_date
+        description: "Date when the portfolio position was closed, null if still open."
+      - name: close_price
+        description: "Price at which the shares were sold, null if still open."
+      - name: last_edited
+        description: "Timestamp (GMT+0800) of the last edit to the portfolio position."

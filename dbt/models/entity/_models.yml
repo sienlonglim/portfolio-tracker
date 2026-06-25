@@ -1,25 +1,65 @@
 version: 2
 
 models:
-  - name: fct_portfolio_positions.sql
+  - name: fct_portfolio_positions
     description: "All portfolio positions."
+    data_tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "close_date is null or close_date >= buy_date"
     columns:
       - name: id
         description: "Unique identifier for the portfolio position."
+        data_tests:
+          - not_null
+      - name: holder
+        description: "Holder of the portfolio position."
+        data_tests:
+          - not_null
       - name: account
         description: "Account associated with the portfolio position."
+        data_tests:
+          - not_null
       - name: ticker
         description: "Stock ticker symbol."
+        data_tests:
+          - not_null
       - name: shares
         description: "Number of shares held in the portfolio position."
+        data_tests:
+          - not_null
       - name: buy_date
         description: "Date when the shares were purchased."
+        data_tests:
+          - not_null
       - name: buy_price
         description: "Price at which the shares were purchased."
+        data_tests:
+          - not_null
       - name: close_date
         description: "Date when the portfolio position was closed, null if still open."
       - name: close_price
         description: "Price at which the shares were sold, null if still open."
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+              config:
+                where: "close_date is not null"
+      - name: last_price
+        description: "Last known price of the stock, either the close price or the latest stock price."
+        data_tests:
+          - not_null
+      - name: last_date
+        description: "Last known date of the stock price, either the close date or the latest stock price date."
+        data_tests:
+          - not_null
+      - name: is_closed_position
+        description: "Boolean indicating whether the portfolio position is closed."
+      - name: position_last_edited
+        description: "Timestamp of the last edit to the portfolio position."
+        data_tests:
+          - not_null
   - name: fct_stock_open_close_prices
     description: "Daily stock prices and volumes."
     columns:
