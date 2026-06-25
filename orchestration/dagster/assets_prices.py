@@ -50,7 +50,7 @@ def stock_open_close_prices(
                 custom_args = {"period": "max"}
             else:
                 custom_args = {
-                    "start": row.max_date.strftime("%Y-%m-%d"),
+                    "start": row.max_date,
                     "end": datetime.now().strftime("%Y-%m-%d")
                 }
             df_temp = market_data_client.get_stock_open_close_prices_long_format(

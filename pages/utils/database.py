@@ -30,7 +30,7 @@ def get_connection():
             buy_price   DOUBLE,
             close_price DOUBLE,
             close_date  DATE,
-            last_edited TIMESTAMP
+            last_edited TIMESTAMPTZ
         )
         """
     )
@@ -72,7 +72,7 @@ def save_positions(con, edited: pd.DataFrame):
 
     old = con.execute(f"SELECT {', '.join(DB_COLUMNS)} FROM raw.portfolio_positions").df()
     old_by_id = {int(r["id"]): r for _, r in old.iterrows()} if not old.empty else {}
-    now = dt.datetime.now(tz=ZoneInfo("Asia/Singapore"))
+    now = dt.datetime.now(tz=ZoneInfo("UTC"))
 
     def stamp(row):
         prev = old_by_id.get(int(row["id"]))
@@ -87,7 +87,7 @@ def save_positions(con, edited: pd.DataFrame):
         return prev["last_edited"]
 
     df["last_edited"] = df.apply(stamp, axis=1)
-    df["last_edited"] = pd.to_datetime(df["last_edited"], errors="coerce")
+    df["last_edited"] = pd.to_datetime(df["last_edited"], errors="coerce", utc=True)
 
     df = df[DB_COLUMNS]
 

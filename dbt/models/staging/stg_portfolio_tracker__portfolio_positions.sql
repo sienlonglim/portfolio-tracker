@@ -1,7 +1,7 @@
 with final as (
 
     select
-        id::varchar as id,
+        id::bigint as id,
         holder::varchar as holder,
         account::varchar as account,
         sym::varchar as ticker,

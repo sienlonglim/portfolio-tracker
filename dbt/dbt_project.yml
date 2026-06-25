@@ -32,3 +32,6 @@ models:
 seeds:
   dbt_portfolio_tracker:
     +schema: seed
+
+tests:
+  +store_failures: true

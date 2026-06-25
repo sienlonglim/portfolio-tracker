@@ -1,4 +1,4 @@
 # workspace.yaml
 
 load_from:
-  - python_module: src.dagster.definitions
+  - python_module: orchestration.dagster.definitions
