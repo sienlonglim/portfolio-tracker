@@ -1,4 +1,4 @@
-with unique_tickers as (select distinct sym as ticker from seed.seed_portfolio_positions),
+with unique_tickers as (select distinct ticker from entity.fct_portfolio_positions),
 
 max_dates as (
 

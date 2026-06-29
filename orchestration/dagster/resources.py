@@ -7,7 +7,7 @@ import pandas as pd
 
 from .sql import render_sql
 
-_SUPPORTED_FORMATS = ("parquet", "csv", "json")
+_SUPPORTED_MOTHERDUCK_FORMATS = ("parquet", "csv", "json")
 
 
 class MotherDuckS3Resource(dg.ConfigurableResource):
@@ -62,8 +62,8 @@ class MotherDuckS3Resource(dg.ConfigurableResource):
 
     def _check_file_format(self, file_format: str) -> None:
         file_format = file_format.lower()
-        if file_format not in _SUPPORTED_FORMATS:
-            raise ValueError(f"file_format must be one of {_SUPPORTED_FORMATS}")
+        if file_format not in _SUPPORTED_MOTHERDUCK_FORMATS:
+            raise ValueError(f"file_format must be one of {_SUPPORTED_MOTHERDUCK_FORMATS}")
 
     def _create_s3_secret(
         self,

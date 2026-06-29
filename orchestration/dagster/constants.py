@@ -5,6 +5,7 @@ from pydantic import Field
 
 
 DBT_PROJECT_DIR = Path(__file__).resolve().parents[2] / "dbt"
+DBT_PROFILE_DIR = DBT_PROJECT_DIR.resolve()
 
 MOTHERDUCK_DATABASE = "portfolio_tracker"
 MOTHERDUCK_TABLE = "stock_open_close_prices"

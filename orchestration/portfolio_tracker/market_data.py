@@ -75,7 +75,8 @@ class MarketDataClient(BaseModel):
             all_rows.extend(df_temp.to_dict(orient='records'))
 
         result = pd.DataFrame(all_rows)
-        result["date"] = pd.to_datetime(result["date"]).dt.date
+        if not result.empty:
+            result["date"] = pd.to_datetime(result["date"]).dt.date
         return result
 
     def _get_sec_ticker_universe(

@@ -58,7 +58,7 @@ def stock_open_close_prices(
                 interval=config.interval,
                 auto_adjust=config.auto_adjust,
                 **custom_args
-            )  
+            )
             all_frames.append(df_temp)
         df_stock_prices = (
             pd.concat(all_frames, ignore_index=True)
@@ -92,6 +92,44 @@ def stock_open_close_prices(
         }
     )
     return df_stock_prices
+
+
+@dg.asset_check(
+    name="test__stock_open_close_prices_not_empty",
+    description="Checks that the stock open and close prices DataFrame is not empty.",
+    asset="stock_open_close_prices",
+    blocking=True,
+)
+def test__stock_open_close_prices_not_empty(
+    stock_open_close_prices: pd.DataFrame
+) -> dg.AssetCheckResult:
+    if stock_open_close_prices.empty:
+        return dg.AssetCheckResult(
+            passed=False,
+            metadata={"message": "DataFrame is empty."}
+        )
+    else:
+        return dg.AssetCheckResult(passed=True)
+
+
+@dg.asset_check(
+    name="test__stock_open_close_prices_has_required_columns",
+    description="Checks that the stock open and close prices DataFrame has the required columns.",
+    asset="stock_open_close_prices",
+    blocking=True,
+)
+def test__stock_open_close_prices_has_required_columns(
+    stock_open_close_prices: pd.DataFrame
+) -> dg.AssetCheckResult:
+    required_columns = ["ticker", "date", "open", "high", "low", "close", "volume"]
+    missing_columns = [col for col in required_columns if col not in stock_open_close_prices.columns]
+    if missing_columns:
+        return dg.AssetCheckResult(
+            passed=False,
+            metadata={"message": f"DataFrame is missing columns: {', '.join(missing_columns)}"}
+        )
+    else:
+        return dg.AssetCheckResult(passed=True)
 
 
 @dg.asset(
@@ -142,4 +180,4 @@ def copy_into_duckdb(
         scope=None,
         full_refresh=config.full_refresh,
     )
-    context.log.info("Success")
+    context.log.info("passed")
