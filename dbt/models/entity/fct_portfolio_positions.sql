@@ -17,7 +17,8 @@ with final as (
     from {{ ref('stg_portfolio_tracker__portfolio_positions') }} as p
     left join {{ ref('fct_stock_open_close_prices') }} as s
         on p.ticker = s.ticker
-    where s.is_latest_price
+    where
+        s.is_latest_price
 
 )
 
