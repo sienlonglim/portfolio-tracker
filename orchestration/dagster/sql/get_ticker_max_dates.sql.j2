@@ -1,4 +1,4 @@
-with unique_tickers as (select distinct ticker from entity.fct_portfolio_positions),
+with unique_tickers as (select distinct ticker from staging.stg_portfolio_tracker__portfolio_positions),
 
 max_dates as (
 

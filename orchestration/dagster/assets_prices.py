@@ -1,17 +1,14 @@
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 
 import dagster as dg
-from dagster_aws.s3 import S3Resource
 import pandas as pd
+from dagster_aws.s3 import S3Resource
 
-from .constants import StockPriceConfig
-from .s3_utils import (
-    create_s3_date_directory,
-    upload_parquet_to_s3
-)
-from .resources import MotherDuckS3Resource
-from .sql import render_sql
 from ..portfolio_tracker.market_data import MarketDataClient
+from .constants import StockPriceConfig
+from .resources import MotherDuckS3Resource
+from .s3_utils import create_s3_date_directory, upload_parquet_to_s3
+from .sql import render_sql
 
 
 @dg.asset(
@@ -27,18 +24,22 @@ def stock_open_close_prices(
     # Default run behaviour: If no tickers are provided, fetch all tickers based on missing data in the MotherDuck table.
     if not config.tickers:
         if config.full_refresh:
-            context.log.info("Full refresh requested, fetching all ticker positions with max historical data.")
+            context.log.info(
+                "Full refresh requested, fetching all ticker positions with max historical data."
+            )
             df_ticker_max_dates = motherduck.query(
                 database=config.motherduck_database,
                 sql=render_sql("get_all_ticker_positions.sql.j2"),
-                as_dataframe=True
+                as_dataframe=True,
             )
         else:
-            context.log.info("No ticker list passed, defaulting to fetching all tickers based on missing data in DB.")
+            context.log.info(
+                "No ticker list passed, defaulting to fetching all tickers based on missing data in DB."
+            )
             df_ticker_max_dates = motherduck.query(
                 database=config.motherduck_database,
                 sql=render_sql("get_ticker_max_dates.sql.j2"),
-                as_dataframe=True
+                as_dataframe=True,
             )
         all_frames = []
         tickers = []
@@ -51,44 +52,47 @@ def stock_open_close_prices(
             else:
                 custom_args = {
                     "start": row.max_date,
-                    "end": datetime.now().strftime("%Y-%m-%d")
+                    "end": datetime.now().strftime("%Y-%m-%d"),
                 }
             df_temp = market_data_client.get_stock_open_close_prices_long_format(
                 tickers=row_tickers,
                 interval=config.interval,
                 auto_adjust=config.auto_adjust,
-                **custom_args
+                **custom_args,
             )
             all_frames.append(df_temp)
         df_stock_prices = (
             pd.concat(all_frames, ignore_index=True)
             if all_frames
-            else pd.DataFrame(columns=["ticker", "date", "open", "close"])
+            else pd.DataFrame(
+                columns=["ticker", "date", "high", "low", "open", "close", "volume"]
+            )
         )
     # Custom run behaviour: If tickers are provided, fetch data for those tickers based on the provided start/end dates or period.
     else:
         tickers = config.tickers
         market_data_client = MarketDataClient(logger=context.log, tickers=tickers)
         if config.start_date and config.end_date:
-            custom_args = {
-                "start": config.start_date,
-                "end": config.end_date
-            }
+            custom_args = {"start": config.start_date, "end": config.end_date}
         elif config.period:
             custom_args = {"period": config.period}
         else:
-            raise ValueError("Either start_date and end_date or period must be provided in the config.")
-        context.log.info(f"Fetching stock prices for tickers: {tickers} with custom arguments: {custom_args}")
+            raise ValueError(
+                "Either start_date and end_date or period must be provided in the config."
+            )
+        context.log.info(
+            f"Fetching stock prices for tickers: {tickers} with custom arguments: {custom_args}"
+        )
         df_stock_prices = market_data_client.get_stock_open_close_prices_long_format(
-            interval=config.interval,
-            auto_adjust=config.auto_adjust,
-            **custom_args
+            interval=config.interval, auto_adjust=config.auto_adjust, **custom_args
         )
     context.add_output_metadata(
         metadata={
             "tickers": tickers,
             "rows": len(df_stock_prices),
-            "preview": dg.MetadataValue.md(df_stock_prices.head().to_markdown(index=False)),
+            "preview": dg.MetadataValue.md(
+                df_stock_prices.head().to_markdown(index=False)
+            ),
         }
     )
     return df_stock_prices
@@ -101,12 +105,11 @@ def stock_open_close_prices(
     blocking=True,
 )
 def test__stock_open_close_prices_not_empty(
-    stock_open_close_prices: pd.DataFrame
+    stock_open_close_prices: pd.DataFrame,
 ) -> dg.AssetCheckResult:
     if stock_open_close_prices.empty:
         return dg.AssetCheckResult(
-            passed=False,
-            metadata={"message": "DataFrame is empty."}
+            passed=False, metadata={"message": "DataFrame is empty."}
         )
     else:
         return dg.AssetCheckResult(passed=True)
@@ -119,14 +122,18 @@ def test__stock_open_close_prices_not_empty(
     blocking=True,
 )
 def test__stock_open_close_prices_has_required_columns(
-    stock_open_close_prices: pd.DataFrame
+    stock_open_close_prices: pd.DataFrame,
 ) -> dg.AssetCheckResult:
     required_columns = ["ticker", "date", "open", "high", "low", "close", "volume"]
-    missing_columns = [col for col in required_columns if col not in stock_open_close_prices.columns]
+    missing_columns = [
+        col for col in required_columns if col not in stock_open_close_prices.columns
+    ]
     if missing_columns:
         return dg.AssetCheckResult(
             passed=False,
-            metadata={"message": f"DataFrame is missing columns: {', '.join(missing_columns)}"}
+            metadata={
+                "message": f"DataFrame is missing columns: {', '.join(missing_columns)}"
+            },
         )
     else:
         return dg.AssetCheckResult(passed=True)
@@ -141,7 +148,7 @@ def s3_stock_open_close_prices(
     context: dg.AssetExecutionContext,
     config: StockPriceConfig,
     s3: S3Resource,
-    stock_open_close_prices: pd.DataFrame
+    stock_open_close_prices: pd.DataFrame,
 ) -> dg.MaterializeResult:
     epoch_time = int(datetime.now(UTC).timestamp())
     key = f"{config.s3_prefix}/{create_s3_date_directory()}/{epoch_time}.parquet"
@@ -153,14 +160,16 @@ def s3_stock_open_close_prices(
         key=key,
         index=False,
     )
-    context.log.info(f"Wrote {len(stock_open_close_prices)} rows to s3://{config.s3_bucket}/{key}")
+    context.log.info(
+        f"Wrote {len(stock_open_close_prices)} rows to s3://{config.s3_bucket}/{key}"
+    )
 
 
 @dg.asset(
     description="Copies stock open and close prices from S3 into a MotherDuck table.",
     group_name="market_data",
     kinds={"s3", "motherduck"},
-    deps=["s3_stock_open_close_prices"]
+    deps=["s3_stock_open_close_prices"],
 )
 def copy_into_duckdb(
     context: dg.AssetExecutionContext,
