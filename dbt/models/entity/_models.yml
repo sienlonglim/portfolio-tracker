@@ -1,8 +1,8 @@
 version: 2
 
 models:
-  - name: fct_portfolio_positions
-    description: "All portfolio positions."
+  - name: dim_portfolio_position_gain_loss
+    description: "All portfolio positions with gains and losses."
     data_tests:
       - dbt_utils.expression_is_true:
           arguments:
@@ -36,6 +36,10 @@ models:
         description: "Price at which the shares were purchased."
         data_tests:
           - not_null
+      - name: cost_basis
+        description: "Total cost basis of the portfolio position (shares * buy_price)."
+      - name: cost_basis_pct
+        description: "Percentage of the total cost basis represented by this position, partitioned by open/closed positions."
       - name: close_date
         description: "Date when the portfolio position was closed, null if still open."
       - name: close_price
@@ -54,19 +58,68 @@ models:
         description: "Last known date of the stock price, either the close date or the latest stock price date."
         data_tests:
           - not_null
-      - name: is_closed_position
-        description: "Boolean indicating whether the portfolio position is closed."
+      - name: market_value
+        description: "Current market value of the portfolio position (shares * last_price)."
+      - name: market_value_pct
+        description: "Percentage of the total market value represented by this position, partitioned by open/closed positions."
+      - name: gain_loss
+        description: "Gain or loss of the portfolio position (market_value - cost_basis)."
+      - name: is_open_position
+        description: "Boolean indicating whether the portfolio position is open."
       - name: position_last_edited
         description: "Timestamp of the last edit to the portfolio position."
         data_tests:
           - not_null
+  - name: fct_portfolio_gain_loss_overtime
+    description: "Portfolio positions with gains and losses over time."
+    columns:
+      - name: id
+        description: "Unique identifier for the portfolio position."
+      - name: holder
+        description: "Holder of the portfolio position."
+      - name: account
+        description: "Account associated with the portfolio position."
+      - name: ticker
+        description: "Stock ticker symbol."
+      - name: shares
+        description: "Number of shares held in the portfolio position."
+      - name: buy_date
+        description: "Date when the shares were purchased."
+      - name: buy_price
+        description: "Price at which the shares were purchased."
+      - name: cost_basis
+        description: "Total cost basis of the portfolio position (shares * buy_price)."
+      - name: close_date
+        description: "Date when the portfolio position was closed, null if still open."
+      - name: close_price
+        description: "Price at which the shares were sold, null if still open."
+      - name: last_price
+        description: "Last known price of the stock, either the close price or the latest stock price."
+      - name: last_date
+        description: "Last known date of the stock price, either the close date or the latest stock price date."
+      - name: market_value
+        description: "Current market value of the portfolio position (shares * last_price)."
+      - name: gain_loss
+        description: "Gain or loss of the portfolio position (market_value - cost_basis)."
+      - name: benchmark_market_value
+        description: "Market value of a benchmark index (CSPX.AS) for comparison purposes."
+      - name: benchmark_gain_loss
+        description: "Gain or loss of a benchmark index (CSPX.AS) for comparison purposes."
+      - name: is_open_position
+        description: "Boolean indicating whether the portfolio position is open."
+      - name: position_last_edited
+        description: "Timestamp of the last edit to the portfolio position."
   - name: fct_stock_open_close_prices
     description: "Daily stock prices and volumes."
     columns:
       - name: ticker
         description: "Unique identifier for the stock."
+        data_tests:
+          - not_null
       - name: date
         description: "Date of the stock price."
+        data_tests:
+          - not_null
       - name: open_price
         description: "Opening price of the stock on the given date."
       - name: high_price
@@ -75,5 +128,9 @@ models:
         description: "Lowest price of the stock on the given date."
       - name: close_price
         description: "Closing price of the stock on the given date."
+        data_tests:
+          - not_null
       - name: traded_volume
         description: "Total volume of the stock traded on the given date."
+      - name: is_latest_price
+        description: "Boolean indicating whether this is the latest price for the stock."

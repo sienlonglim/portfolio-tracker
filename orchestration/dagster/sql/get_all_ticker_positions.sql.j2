@@ -1,5 +1,5 @@
 select
     null as max_date,
     array_agg(ticker) as tickers
-from entity.fct_portfolio_positions
+from entity.fct_portfolio_gain_loss
 group by 1
