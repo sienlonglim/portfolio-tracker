@@ -27,8 +27,10 @@ Create a `.env` file in the root folder with the following environmental variabl
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 AWS_REGION=
-DBT_ENGINE_PROFILES_DIR=$PWD/dbt
-DBT_PROJECT_DIR=$PWD/dbt
+DBT_ENGINE_PROFILES_DIR=$PWD/dbt  # Use full path to the repo root
+DBT_PROJECT_DIR=$PWD/dbt  # Use full path to the repo root
+EODHD_API_KEY= # Only required for non-US positions
+ALPHAVANTAGE_API_KEY=  # Only required for retrieving fundamentals
 MOTHERDUCK_DB_PATH="md:portfolio_tracker"  # Create this database in MotherDuck
 MOTHERDUCK_TOKEN=
 ```

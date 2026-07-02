@@ -1,11 +1,7 @@
 import streamlit as st
-
-from pages.utils.database import (
-    get_connection,
-    load_positions,
-    save_positions
-)
+from pages.utils.database import get_connection, load_positions, save_positions
 from pages.utils.login import check_login
+from pages.visualisations.positions import visualisation_tab
 
 
 # --- Tabs ------------------------------------------------------------------
@@ -21,7 +17,9 @@ def positions_tab(con):
         width="stretch",
         key="editor",
         column_config={
-            "id": st.column_config.NumberColumn("id", disabled=True, help="auto-assigned"),
+            "id": st.column_config.NumberColumn(
+                "id", disabled=True, help="auto-assigned"
+            ),
             "holder": st.column_config.TextColumn("holder", help="who owns the stock"),
             "shares": st.column_config.NumberColumn("shares", format="%.4f"),
             "buy_date": st.column_config.DateColumn("buy_date"),
@@ -38,11 +36,6 @@ def positions_tab(con):
             st.rerun()
         except Exception as e:
             st.error(f"Save failed: {e}")
-
-
-def visualisation_tab(con):
-    st.subheader("Visualisation")
-    st.info("Coming soon. Charts go here.")
 
 
 # --- Main ------------------------------------------------------------------
@@ -64,7 +57,7 @@ def main():
     with tab_pos:
         positions_tab(con)
     with tab_viz:
-        visualisation_tab(con)
+        visualisation_tab(con, load_positions)
 
 
 if __name__ == "__main__":

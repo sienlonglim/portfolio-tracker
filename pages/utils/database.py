@@ -6,15 +6,22 @@ import pandas as pd
 import streamlit as st
 
 COLUMNS = [
-    "id", "holder", "account", "sym", "shares",
-    "buy_date", "buy_price", "close_price", "close_date",
+    "id",
+    "holder",
+    "account",
+    "sym",
+    "shares",
+    "buy_date",
+    "buy_price",
+    "close_price",
+    "close_date",
 ]
 EDIT_FIELDS = COLUMNS[1:]
 DB_COLUMNS = COLUMNS + ["last_edited"]
 
 
 @st.cache_resource
-def get_connection():
+def get_connection() -> duckdb.DuckDBPyConnection:
     token = st.secrets["motherduck"]["token"]
     db = st.secrets["motherduck"].get("database")
     con = duckdb.connect(f"md:{db}?motherduck_token={token}")
@@ -37,8 +44,10 @@ def get_connection():
     return con
 
 
-def load_positions(con) -> pd.DataFrame:
-    df = con.execute(f"SELECT {', '.join(DB_COLUMNS)} FROM raw.portfolio_positions ORDER BY id").df()
+def load_positions(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
+    df = con.execute(
+        f"SELECT {', '.join(DB_COLUMNS)} FROM raw.portfolio_positions ORDER BY id"
+    ).df()
     if df.empty:
         df = pd.DataFrame(columns=DB_COLUMNS)
     for c in ("buy_date", "close_date", "last_edited"):
@@ -51,7 +60,7 @@ def load_positions(con) -> pd.DataFrame:
     return df
 
 
-def save_positions(con, edited: pd.DataFrame):
+def save_positions(con: duckdb.DuckDBPyConnection, edited: pd.DataFrame):
     df = edited.copy()
 
     # assign ids to new rows (null/blank id)
@@ -70,7 +79,9 @@ def save_positions(con, edited: pd.DataFrame):
             new_ids.append(int(v))
     df["id"] = new_ids
 
-    old = con.execute(f"SELECT {', '.join(DB_COLUMNS)} FROM raw.portfolio_positions").df()
+    old = con.execute(
+        f"SELECT {', '.join(DB_COLUMNS)} FROM raw.portfolio_positions"
+    ).df()
     old_by_id = {int(r["id"]): r for _, r in old.iterrows()} if not old.empty else {}
     now = dt.datetime.now(tz=ZoneInfo("UTC"))
 
@@ -96,7 +107,9 @@ def save_positions(con, edited: pd.DataFrame):
     con.execute("BEGIN")
     try:
         con.execute("DELETE FROM raw.portfolio_positions")
-        con.execute(f"INSERT INTO raw.portfolio_positions SELECT {', '.join(DB_COLUMNS)} FROM edited_positions")
+        con.execute(
+            f"INSERT INTO raw.portfolio_positions SELECT {', '.join(DB_COLUMNS)} FROM edited_positions"
+        )
         con.execute("COMMIT")
     except Exception:
         con.execute("ROLLBACK")
