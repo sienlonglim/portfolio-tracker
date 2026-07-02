@@ -38,14 +38,13 @@ MOTHERDUCK_TOKEN=
 UI
 
 ```shell
-dagster dev -w workspace.yaml
+dagster dev
 ```
 
 Headless
 
 ```shell
-dagster-daemon run
-dagster job execute -j <job_name>> -w workspace.yaml
+dg launch --job <job_name> # job_dbt_build or job_ingest_daily_stock_prices
 ```
 
 ## Running LightDash
