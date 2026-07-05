@@ -2,6 +2,7 @@ import datetime as dt
 from zoneinfo import ZoneInfo
 
 import duckdb
+import numpy as np
 import pandas as pd
 import streamlit as st
 
@@ -60,49 +61,61 @@ def load_positions(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     return df
 
 
-def save_positions(con: duckdb.DuckDBPyConnection, edited: pd.DataFrame):
-    df = edited.copy()
-
-    # assign ids to new rows (null/blank id)
+def _assign_ids(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Assigns unique IDs to rows in the DataFrame. If a row already has an ID, it is preserved.
+    If a row does not have an ID, a new unique ID is assigned. The function ensures that IDs are unique and sequential, starting from 1.
+    """
+    df = df.copy()
     df["id"] = pd.to_numeric(df["id"], errors="coerce")
-    used = set(df["id"].dropna().astype(int))
-    next_id = (max(used) + 1) if used else 1
+    used_ids = set(df["id"].dropna().astype(int))
+    next_id = (max(used_ids) + 1) if used_ids else 1
     new_ids = []
-    for v in df["id"]:
-        if pd.isna(v):
-            while next_id in used:
+    for id in df["id"]:
+        if pd.isna(id):
+            while next_id in used_ids:
                 next_id += 1
-            used.add(next_id)
+            used_ids.add(next_id)
             new_ids.append(next_id)
             next_id += 1
         else:
-            new_ids.append(int(v))
+            new_ids.append(int(id))
     df["id"] = new_ids
+    return df
 
-    old = con.execute(
+
+def save_positions(con: duckdb.DuckDBPyConnection, df_edited: pd.DataFrame):
+    df = _assign_ids(df_edited)
+
+    # Retrieve the old data from the database to compare and determine which rows have changed
+    df_old = con.execute(
         f"SELECT {', '.join(DB_COLUMNS)} FROM raw.portfolio_positions"
     ).df()
-    old_by_id = {int(r["id"]): r for _, r in old.iterrows()} if not old.empty else {}
+    old_row_data_lookup = (
+        {int(r["id"]): r for _, r in df_old.iterrows()} if not df_old.empty else {}
+    )
     now = dt.datetime.now(tz=ZoneInfo("UTC"))
 
-    def stamp(row):
-        prev = old_by_id.get(int(row["id"]))
-        if prev is None:
+    def _update_timestamp(row):
+        old_data_row = old_row_data_lookup.get(int(row["id"]))
+        if old_data_row is None:
+            # Update if the row is new (not present in the old data)
             return now
-        for f in EDIT_FIELDS:
-            a, b = row[f], prev[f]
-            if pd.isna(a) and pd.isna(b):
+        for field in EDIT_FIELDS:
+            current_data, old_data_value = row[field], old_data_row[field]
+            if pd.isna(current_data) and pd.isna(old_data_value):
                 continue
-            if a != b:
+            if current_data != old_data_value:
+                # Update if any of the fields have changed
                 return now
-        return prev["last_edited"]
+        return old_data_row["last_edited"]
 
-    df["last_edited"] = df.apply(stamp, axis=1)
+    df["last_edited"] = df.apply(_update_timestamp, axis=1)
     df["last_edited"] = pd.to_datetime(df["last_edited"], errors="coerce", utc=True)
 
     df = df[DB_COLUMNS]
 
-    # full reconcile: editor grid is source of truth
+    # Full reconcile: editor grid as the source of truth
     con.register("edited_positions", df)
     con.execute("BEGIN")
     try:
@@ -116,3 +129,32 @@ def save_positions(con: duckdb.DuckDBPyConnection, edited: pd.DataFrame):
         raise
     finally:
         con.unregister("edited_positions")
+
+
+def apply_stock_split(
+    df: pd.DataFrame, symbol: str, split_ratio: float
+) -> pd.DataFrame:
+    """
+    Applies a stock split to the given DataFrame for the specified symbol and split ratio.
+    The function adjusts the number of shares, buy price, and close price accordingly.
+    Parameters:
+    - df: The DataFrame containing the stock positions.
+    - symbol: The stock symbol for which the split is to be applied.
+    - split_ratio: The ratio of the stock split (e.g., 2.0 for a 2-for-1 split).
+    Returns:
+    - A new DataFrame with the stock split applied.
+    """
+    if split_ratio <= 0:
+        raise ValueError("Split ratio must be greater than zero.")
+
+    out = df.copy()
+    mask = out["sym"] == symbol
+
+    out.loc[mask, "shares"] = out.loc[mask, "shares"] * split_ratio
+    out.loc[mask, "buy_price"] = out.loc[mask, "buy_price"] / split_ratio
+    out.loc[mask, "close_price"] = np.where(
+        out.loc[mask, "close_price"].notna(),
+        out.loc[mask, "close_price"] / split_ratio,
+        out.loc[mask, "close_price"],
+    )
+    return out
