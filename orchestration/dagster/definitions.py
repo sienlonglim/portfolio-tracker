@@ -1,16 +1,9 @@
-from dagster import (
-    Definitions,
-    EnvVar,
-    load_assets_from_modules
-)
-from dagster_dbt import DbtCliResource
+from dagster import Definitions, EnvVar, load_assets_from_modules
 from dagster_aws.s3 import S3Resource
+from dagster_dbt import DbtCliResource
 
-from . import (
-    assets_dbt,
-    assets_prices
-)
-from .constants import DBT_PROJECT_DIR, DBT_PROFILE_DIR
+from . import assets_dbt, assets_positions, assets_prices
+from .constants import DBT_PROFILE_DIR, DBT_PROJECT_DIR
 from .jobs import jobs
 from .resources import MotherDuckS3Resource
 
@@ -18,7 +11,13 @@ assert DBT_PROJECT_DIR.exists()
 assert (DBT_PROFILE_DIR / "profiles.yml").exists()
 
 defs = Definitions(
-    assets=load_assets_from_modules(modules=[assets_dbt, assets_prices]),
+    assets=load_assets_from_modules(
+        modules=[
+            assets_dbt,
+            assets_prices,
+            assets_positions
+        ]
+    ),
     asset_checks=[
         assets_prices.test__stock_open_close_prices_not_empty,
         assets_prices.test__stock_open_close_prices_has_required_columns

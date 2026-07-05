@@ -1,5 +1,5 @@
-from contextlib import contextmanager
 import datetime
+from contextlib import contextmanager
 
 import dagster as dg
 import duckdb
@@ -39,10 +39,7 @@ class MotherDuckS3Resource(dg.ConfigurableResource):
             raise
 
     def query(
-        self,
-        database: str,
-        sql: str,
-        as_dataframe: bool = False
+        self, database: str, sql: str, as_dataframe: bool = False
     ) -> list[tuple] | pd.DataFrame:
         """
         Execute a SQL query against a MotherDuck database.
@@ -63,12 +60,12 @@ class MotherDuckS3Resource(dg.ConfigurableResource):
     def _check_file_format(self, file_format: str) -> None:
         file_format = file_format.lower()
         if file_format not in _SUPPORTED_MOTHERDUCK_FORMATS:
-            raise ValueError(f"file_format must be one of {_SUPPORTED_MOTHERDUCK_FORMATS}")
+            raise ValueError(
+                f"file_format must be one of {_SUPPORTED_MOTHERDUCK_FORMATS}"
+            )
 
     def _create_s3_secret(
-        self,
-        conn: duckdb.DuckDBPyConnection,
-        scope: str | None = None
+        self, conn: duckdb.DuckDBPyConnection, scope: str | None = None
     ) -> None:
         """
         Create or replace a secret in MotherDuck for accessing S3.
@@ -88,9 +85,7 @@ class MotherDuckS3Resource(dg.ConfigurableResource):
         )
 
     def _create_schema_if_not_exists(
-        self,
-        conn: duckdb.DuckDBPyConnection,
-        schema: str
+        self, conn: duckdb.DuckDBPyConnection, schema: str
     ) -> None:
         conn.execute(render_sql("create_schema.sql.j2", schema=schema))
 
@@ -98,10 +93,7 @@ class MotherDuckS3Resource(dg.ConfigurableResource):
         return f"{schema}__{table_name}__loaded_files"
 
     def _track_metadata(
-        self,
-        conn: duckdb.DuckDBPyConnection,
-        schema: str,
-        table_name: str
+        self, conn: duckdb.DuckDBPyConnection, schema: str, table_name: str
     ) -> None:
         """
         Create a metadata table to track loaded files in MotherDuck.
@@ -126,7 +118,7 @@ class MotherDuckS3Resource(dg.ConfigurableResource):
         schema: str,
         table_name: str,
         file_format: str = "parquet",
-        full_refresh: bool = False
+        full_refresh: bool = False,
     ) -> list[str]:
         pattern = f"{s3_path.rstrip('/')}/**/*.{file_format}"
         logger = dg.get_dagster_logger()
@@ -136,7 +128,9 @@ class MotherDuckS3Resource(dg.ConfigurableResource):
                 render_sql("list_source_files.sql.j2", pattern=pattern)
             ).fetchall()
         ]
-        logger.info(f"Found {len(source_files)} source files with S3 pattern '{pattern}'")
+        logger.info(
+            f"Found {len(source_files)} source files with S3 pattern '{pattern}'"
+        )
 
         if full_refresh:
             files_to_load = source_files
@@ -157,7 +151,9 @@ class MotherDuckS3Resource(dg.ConfigurableResource):
 
         if not files_to_load:
             return []
-        logger.info(f"Files to load into MotherDuck table '{schema}.{table_name}': {files_to_load}")
+        logger.info(
+            f"Files to load into MotherDuck table '{schema}.{table_name}': {files_to_load}"
+        )
         return files_to_load
 
     def copy_into_duckdb(
@@ -193,7 +189,7 @@ class MotherDuckS3Resource(dg.ConfigurableResource):
                 s3_path=s3_path,
                 schema=schema,
                 table_name=table_name,
-                file_format=file_format
+                file_format=file_format,
             )
             if not files_to_load:
                 logger.info("No new files to load. Exiting without making changes.")
@@ -249,3 +245,32 @@ class MotherDuckS3Resource(dg.ConfigurableResource):
                     )
                 )
                 logger.info("Committed transaction successfully")
+
+    def copy_into_s3(
+        self,
+        database: str,
+        schema: str,
+        table_name: str,
+        s3_path: str,
+        filename: str,
+    ) -> None:
+        """
+        Copy a MotherDuck table to S3 in Parquet format.
+        Parameters:
+            database: The name of the MotherDuck database.
+            table_name: The name of the MotherDuck table to copy.
+            schema: The schema of the MotherDuck table.
+            s3_path: The S3 path where the data will be copied.
+            filename: The filename (without extension) for the copied data in S3.
+        """
+        with self.motherduck_connection(database=database) as conn:
+            self._create_s3_secret(conn=conn)
+            conn.execute(
+                render_sql(
+                    "copy_table_to_s3.sql.j2",
+                    schema=schema,
+                    table_name=table_name,
+                    s3_path=s3_path,
+                    filename=filename,
+                )
+            )

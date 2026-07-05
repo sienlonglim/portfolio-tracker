@@ -3,16 +3,17 @@ from pathlib import Path
 from dagster import Config
 from pydantic import Field
 
-
 DBT_PROJECT_DIR = Path(__file__).resolve().parents[2] / "dbt"
 DBT_PROFILE_DIR = DBT_PROJECT_DIR.resolve()
 
 MOTHERDUCK_DATABASE = "portfolio_tracker"
-MOTHERDUCK_TABLE = "stock_open_close_prices"
+MOTHERDUCK_PRICES_TABLE = "stock_open_close_prices"
+MOTHERDUCK_POSITIONS_TABLE = "portfolio_positions"
 MOTHERDUCK_SCHEMA = "raw"
 
 S3_BUCKET = "sl-python-projects"
-S3_PREFIX = "portfolio-tracker/market-data/stock-prices/open-close"
+S3_PRICES_PREFIX = "portfolio-tracker/market-data/stock-prices/open-close"
+S3_POSITIONS_PREFIX = "portfolio-tracker/positions/backup"
 
 
 class StockPriceConfig(Config):
@@ -45,7 +46,7 @@ class StockPriceConfig(Config):
         description="Target S3 bucket name to write the output dataset to.",
     )
     s3_prefix: str = Field(
-        default=S3_PREFIX,
+        default=S3_PRICES_PREFIX,
         description="S3 key prefix where output files will be stored.",
     )
     motherduck_database: str = Field(
@@ -53,7 +54,7 @@ class StockPriceConfig(Config):
         description="MotherDuck database name to copy the data into.",
     )
     motherduck_table: str = Field(
-        default=MOTHERDUCK_TABLE,
+        default=MOTHERDUCK_PRICES_TABLE,
         description="MotherDuck table name to copy the data into.",
     )
     motherduck_schema: str = Field(
@@ -63,4 +64,27 @@ class StockPriceConfig(Config):
     full_refresh: bool = Field(
         default=False,
         description="Whether to perform a full refresh of the ingestion and the MotherDuck table. If True, the table will be recreated; if False, new data will be appended.",
+    )
+
+
+class PositionsConfig(Config):
+    s3_bucket: str = Field(
+        default=S3_BUCKET,
+        description="Target S3 bucket name to write the output dataset to.",
+    )
+    s3_prefix: str = Field(
+        default=S3_POSITIONS_PREFIX,
+        description="S3 key prefix where output files will be stored.",
+    )
+    motherduck_database: str = Field(
+        default=MOTHERDUCK_DATABASE,
+        description="MotherDuck database name to copy the data into.",
+    )
+    motherduck_table: str = Field(
+        default=MOTHERDUCK_POSITIONS_TABLE,
+        description="MotherDuck table name to copy the data into.",
+    )
+    motherduck_schema: str = Field(
+        default=MOTHERDUCK_SCHEMA,
+        description="MotherDuck schema name to copy the data into.",
     )
