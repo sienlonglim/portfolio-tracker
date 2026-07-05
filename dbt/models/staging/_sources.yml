@@ -2,10 +2,10 @@ version: 2
 
 sources:
   - name: raw
-    database: portfolio-tracker
+    database: portfolio_tracker
     schema: raw
     tables:
-      - name: stock_prices_open_close
+      - name: stock_open_close_prices
         description: "Open and close prices for stocks (daily)."
         columns:
           - name: data

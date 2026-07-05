@@ -10,7 +10,7 @@ with final as (
         volume::bigint as traded_volume,
         metafile_name::varchar as metafile_name,
         metafile_modified::timestamp as metafile_modified
-    from portfolio_tracker.raw.stock_open_close_prices
+    from {{ source('raw', 'stock_open_close_prices') }}
     where open is not null
     qualify row_number() over (
         partition by ticker, date
