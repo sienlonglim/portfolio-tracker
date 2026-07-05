@@ -6,21 +6,16 @@ import streamlit as st
 
 def visualisation_tab(
     connection: duckdb.DuckDBPyConnection,
-    load_positions: callable,  # Change to load the fct table with latest prices instead
+    load_portfolio_position_gain_loss: callable,
 ) -> None:
     st.subheader("Visualisation")
-    df: pd.DataFrame = load_positions(connection)
+    df: pd.DataFrame = load_portfolio_position_gain_loss(connection)
     if df.empty:
         st.info("No positions yet. Add some in the Positions tab.")
         return
 
-    df_open_positions = df[df["close_date"].isna()].copy()
-    if df_open_positions.empty:
-        st.info("No open positions to visualise.")
-        return
-
-    # Holder and pct selection
-    all_holders = sorted(df_open_positions["holder"].dropna().unique().tolist())
+    # Selection, filtering, and aggregations
+    all_holders = sorted(df["holder"].dropna().unique().tolist())
     f1, f2, f3 = st.columns([2, 1, 1])
     with f1:
         selected_holders = st.multiselect(
@@ -45,56 +40,60 @@ def visualisation_tab(
         )
     pct_mode = display_mode == "% of Portfolio"
 
-    df_open_positions = df_open_positions[
-        df_open_positions["holder"].isin(selected_holders)
-    ]
-    if df_open_positions.empty:
-        st.info("No open positions for the selected holder(s).")
+    holder_mask = df["holder"].isin(selected_holders)
+    df_filtered = df.loc[holder_mask, :]
+    all_positions_gain_loss, benchmark_gain_loss = (
+        df_filtered["gain_loss"].sum(),
+        df_filtered["benchmark_gain_loss"].sum(),
+    )
+    if df_filtered.empty:
+        st.info("No positions for the selected holder(s).")
         return
 
-    df_open_positions["open_market_value"] = (
-        df_open_positions["shares"] * df_open_positions["buy_price"]
+    open_position_mask = df_filtered["is_open_position"]
+    df_filtered = df_filtered.loc[open_position_mask, :]
+    total_open_cost_basis, total_open_value = (
+        df_filtered["cost_basis"].sum(),
+        df_filtered["market_value"].sum(),
     )
-    # df_open_positions["asset_class"] = df_open_positions["asset_class"].fillna("Unclassified")
-    # df_open_positions["sector"] = df_open_positions["sector"].fillna("Unclassified")
-    total_value = df_open_positions["open_market_value"].sum()
-
-    # Metrics
-    k1, k2, k3, k4 = st.columns(4)
-    if pct_mode:
-        k1.metric("Open Market Value", "100%", help=f"= ${total_value:,.0f}")
-    else:
-        k1.metric("Open Market Value", f"${total_value:,.0f}")
-    k2.metric("Open Positions", len(df_open_positions))
-    k3.metric("Distinct Symbols", df_open_positions["sym"].nunique())
-    k4.metric("Holders", df_open_positions["holder"].nunique())
-    st.divider()
-
-    # Position Chart
-    label = "% of Portfolio" if pct_mode else "Portfolio value ($)"
-    st.markdown(f"#### Top {top_n} open positions by {label}")
-    df_open_positions_breakdown = (
-        df_open_positions.groupby("sym")["open_market_value"]
+    df_breakdown = (
+        df_filtered.groupby("ticker")["market_value"]
         .sum()
         .sort_values(ascending=False)
         .reset_index()
     )
+
+    # Metrics
+    k1, k2, k3, k4 = st.columns(4)
+    k1.metric("Open Cost Basis", f"${total_open_cost_basis:,.0f}")
+    k2.metric("Open Market Value", f"${total_open_value:,.0f}")
+    k3.metric("Open Positions", len(df_filtered))
+    k4.metric("Distinct tickers", df_filtered["ticker"].nunique())
+
+    k1.metric("All Position Gain/Loss", f"${all_positions_gain_loss:,.0f}")
+    k2.metric("Benchmark Gain/Loss", f"${benchmark_gain_loss:,.0f}")
+    st.divider()
+
+    # Position Chart
+    label = "% of Portfolio" if pct_mode else "Portfolio value ($)"
+    st.markdown(f"#### Top {top_n} ticker positions by {label}")
+
     if pct_mode:
-        df_open_positions_breakdown["open_market_value"] = (
-            df_open_positions_breakdown["open_market_value"] / total_value * 100
+        df_breakdown["market_value"] = (
+            df_breakdown["market_value"] / total_open_value * 100
         )
         fig3 = px.bar(
-            df_open_positions_breakdown.head(top_n),
-            x="open_market_value",
-            y="sym",
+            df_breakdown.head(top_n),
+            x="market_value",
+            y="ticker",
             orientation="h",
             text_auto=".1f",
         )
     else:
         fig3 = px.bar(
-            df_open_positions_breakdown.head(top_n),
-            x="open_market_value",
-            y="sym",
+            df_breakdown.head(top_n),
+            x="market_value",
+            y="ticker",
             orientation="h",
             text_auto=".2s",
         )
@@ -107,11 +106,11 @@ def visualisation_tab(
     # c1, c2 = st.columns(2)
     # with c1:
     #     by_asset = (
-    #         df_open_positions.groupby("asset_class")["open_market_value"].sum()
+    #         df.groupby("asset_class")["market_value"].sum()
     #         .sort_values(ascending=False).reset_index()
     #     )
     #     fig = px.pie(
-    #         by_asset, names="asset_class", values="open_market_value", hole=0.55,
+    #         by_asset, names="asset_class", values="market_value", hole=0.55,
     #         title="Allocation by Asset Class",
     #     )
     #     fig.update_traces(textinfo="percent+label")
@@ -119,11 +118,11 @@ def visualisation_tab(
 
     # with c2:
     #     by_sector = (
-    #         df_open_positions.groupby("sector")["open_market_value"].sum()
+    #         df.groupby("sector")["market_value"].sum()
     #         .sort_values(ascending=False).reset_index()
     #     )
     #     fig2 = px.pie(
-    #         by_sector, names="sector", values="open_market_value", hole=0.55,
+    #         by_sector, names="sector", values="market_value", hole=0.55,
     #         title="Allocation by Sector",
     #     )
     #     fig2.update_traces(textinfo="percent+label")

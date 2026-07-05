@@ -2,7 +2,8 @@ import streamlit as st
 from pages.utils.database import (
     apply_stock_split,
     get_connection,
-    load_positions,
+    load_portfolio_position_gain_loss,
+    load_raw_positions,
     save_positions,
 )
 from pages.utils.login import check_login
@@ -19,7 +20,7 @@ def positions_tab(con):
     if "split_applied" not in st.session_state:
         st.session_state.split_applied = False
 
-    df = load_positions(con)
+    df = load_raw_positions(con)
 
     df_edited = st.data_editor(
         df,
@@ -122,7 +123,7 @@ def main():
     with tab_pos:
         positions_tab(con)
     with tab_viz:
-        visualisation_tab(con, load_positions)
+        visualisation_tab(con, load_portfolio_position_gain_loss)
 
 
 if __name__ == "__main__":

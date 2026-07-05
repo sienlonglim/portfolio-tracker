@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-COLUMNS = [
+RAW_POSITION_COLUMNS = [
     "id",
     "holder",
     "account",
@@ -17,8 +17,18 @@ COLUMNS = [
     "close_price",
     "close_date",
 ]
-EDIT_FIELDS = COLUMNS[1:]
-DB_COLUMNS = COLUMNS + ["last_edited"]
+EDIT_FIELDS = RAW_POSITION_COLUMNS[1:]
+RAW_POSITION_COLUMNS_ALL = RAW_POSITION_COLUMNS + ["last_edited"]
+
+DIM_PORTFOLIO_POSITION_GAIN_LOSS_COLUMNS = [
+    "holder",
+    "ticker",
+    "cost_basis",
+    "market_value",
+    "gain_loss",
+    "benchmark_gain_loss",
+    "is_open_position",
+]
 
 
 @st.cache_resource
@@ -45,12 +55,13 @@ def get_connection() -> duckdb.DuckDBPyConnection:
     return con
 
 
-def load_positions(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
-    df = con.execute(
-        f"SELECT {', '.join(DB_COLUMNS)} FROM raw.portfolio_positions ORDER BY id"
+@st.cache_data
+def load_raw_positions(_con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
+    df = _con.execute(
+        f"SELECT {', '.join(RAW_POSITION_COLUMNS_ALL)} FROM raw.portfolio_positions ORDER BY id"
     ).df()
     if df.empty:
-        df = pd.DataFrame(columns=DB_COLUMNS)
+        df = pd.DataFrame(columns=RAW_POSITION_COLUMNS_ALL)
     for c in ("buy_date", "close_date", "last_edited"):
         df[c] = pd.to_datetime(df[c], errors="coerce")
     for c in ("shares", "buy_price", "close_price"):
@@ -89,7 +100,7 @@ def save_positions(con: duckdb.DuckDBPyConnection, df_edited: pd.DataFrame):
 
     # Retrieve the old data from the database to compare and determine which rows have changed
     df_old = con.execute(
-        f"SELECT {', '.join(DB_COLUMNS)} FROM raw.portfolio_positions"
+        f"SELECT {', '.join(RAW_POSITION_COLUMNS_ALL)} FROM raw.portfolio_positions"
     ).df()
     old_row_data_lookup = (
         {int(r["id"]): r for _, r in df_old.iterrows()} if not df_old.empty else {}
@@ -113,7 +124,7 @@ def save_positions(con: duckdb.DuckDBPyConnection, df_edited: pd.DataFrame):
     df["last_edited"] = df.apply(_update_timestamp, axis=1)
     df["last_edited"] = pd.to_datetime(df["last_edited"], errors="coerce", utc=True)
 
-    df = df[DB_COLUMNS]
+    df = df[RAW_POSITION_COLUMNS_ALL]
 
     # Full reconcile: editor grid as the source of truth
     con.register("edited_positions", df)
@@ -121,7 +132,7 @@ def save_positions(con: duckdb.DuckDBPyConnection, df_edited: pd.DataFrame):
     try:
         con.execute("DELETE FROM raw.portfolio_positions")
         con.execute(
-            f"INSERT INTO raw.portfolio_positions SELECT {', '.join(DB_COLUMNS)} FROM edited_positions"
+            f"INSERT INTO raw.portfolio_positions SELECT {', '.join(RAW_POSITION_COLUMNS_ALL)} FROM edited_positions"
         )
         con.execute("COMMIT")
     except Exception:
@@ -158,3 +169,20 @@ def apply_stock_split(
         out.loc[mask, "close_price"],
     )
     return out
+
+
+@st.cache_data
+def load_portfolio_position_gain_loss(_con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
+    df = _con.execute(
+        f"SELECT {', '.join(DIM_PORTFOLIO_POSITION_GAIN_LOSS_COLUMNS)} FROM entity.dim_portfolio_position_gain_loss"
+    ).df()
+    if df.empty:
+        st.error(
+            "No data found in entity.dim_portfolio_position_gain_loss. Please run the dbt models to populate the table."
+        )
+        return
+    for c in ("cost_basis", "market_value", "gain_loss", "benchmark_gain_loss"):
+        df[c] = pd.to_numeric(df[c], errors="coerce")
+    for c in ("holder", "ticker"):
+        df[c] = df[c].astype("string")
+    return df
