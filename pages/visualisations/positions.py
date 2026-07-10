@@ -16,7 +16,7 @@ def visualisation_tab(
 
     # Selection, filtering, and aggregations
     all_holders = sorted(df["holder"].dropna().unique().tolist())
-    f1, f2, f3 = st.columns([2, 1, 1])
+    f1, f2, f3, f4 = st.columns([3, 1.5, 1, 0.5])
     with f1:
         selected_holders = st.multiselect(
             "Holders to include",
@@ -34,14 +34,21 @@ def visualisation_tab(
         )
     with f3:
         display_mode = st.radio(
-            "Show as",
-            options=["$ Absolute", "% of Portfolio"],
+            "Display Mode",
+            options=["$", "%"],
             horizontal=True,
+            help="% of Portfolio is relative to total open market value.",
         )
-    pct_mode = display_mode == "% of Portfolio"
+    with f4:
+        ascending_order = st.toggle(
+            label="Asc",
+            help="Whether to sort the positions in ascending order based on market value.",
+        )
+    pct_mode = display_mode == "%"
 
+    # Filter the data based on options
     holder_mask = df["holder"].isin(selected_holders)
-    df_filtered = df.loc[holder_mask, :]
+    df_filtered = df.loc[holder_mask, :].copy()
     all_positions_gain_loss, benchmark_gain_loss = (
         df_filtered["gain_loss"].sum(),
         df_filtered["benchmark_gain_loss"].sum(),
@@ -50,24 +57,29 @@ def visualisation_tab(
         st.info("No positions for the selected holder(s).")
         return
 
-    open_position_mask = df_filtered["is_open_position"]
-    df_filtered = df_filtered.loc[open_position_mask, :]
+    # Handle closed positions, set cost_basis and market_value to 0 but leave gain loss intact for closed positions
+    open_position_mask = df_filtered["is_open_position"].fillna(False)
+    df_filtered.loc[~open_position_mask, ["cost_basis", "market_value"]] = 0
+    open_positions_count = int(open_position_mask.sum())
+
+    # Get metrics and breakdowns
     total_open_cost_basis, total_open_value = (
         df_filtered["cost_basis"].sum(),
         df_filtered["market_value"].sum(),
     )
     df_breakdown = (
-        df_filtered.groupby("ticker")["market_value"]
+        df_filtered.groupby("ticker", as_index=False)[
+            ["cost_basis", "gain_loss", "market_value"]
+        ]
         .sum()
-        .sort_values(ascending=False)
-        .reset_index()
+        .sort_values("market_value", ascending=ascending_order)
     )
 
-    # Metrics
+    # Metric display
     k1, k2, k3, k4 = st.columns(4)
     k1.metric("Open Cost Basis", f"${total_open_cost_basis:,.0f}")
     k2.metric("Open Market Value", f"${total_open_value:,.0f}")
-    k3.metric("Open Positions", len(df_filtered))
+    k3.metric("Open Positions", open_positions_count)
     k4.metric("Distinct tickers", df_filtered["ticker"].nunique())
 
     k1.metric("All Position Gain/Loss", f"${all_positions_gain_loss:,.0f}")
@@ -76,54 +88,48 @@ def visualisation_tab(
 
     # Position Chart
     label = "% of Portfolio" if pct_mode else "Portfolio value ($)"
-    st.markdown(f"#### Top {top_n} ticker positions by {label}")
+    st.markdown(
+        f"#### Top {top_n} ticker positions by {label}",
+        help="Gain/Loss includes all open and closed positions",
+    )
 
+    df_top = df_breakdown.head(top_n).copy()
     if pct_mode:
-        df_breakdown["market_value"] = (
-            df_breakdown["market_value"] / total_open_value * 100
-        )
-        fig3 = px.bar(
-            df_breakdown.head(top_n),
-            x="market_value",
-            y="ticker",
-            orientation="h",
-            text_auto=".1f",
-        )
+        denominator = total_open_value if total_open_value != 0 else 1
+        df_top["open_cost_basis"] = df_top["cost_basis"] / denominator * 100
+        df_top["gain_loss"] = df_top["gain_loss"] / denominator * 100
+        text_auto = ".1f"
     else:
-        fig3 = px.bar(
-            df_breakdown.head(top_n),
-            x="market_value",
-            y="ticker",
-            orientation="h",
-            text_auto=".2s",
-        )
+        df_top["open_cost_basis"] = df_top["cost_basis"]
+        text_auto = ".2s"
+
+    df_plot = df_top.melt(
+        id_vars="ticker",
+        value_vars=["open_cost_basis", "gain_loss"],
+        var_name="component",
+        value_name="value",
+    )
+    df_plot["component"] = df_plot["component"].map(
+        {
+            "open_cost_basis": "Open Cost Basis",
+            "gain_loss": "All Gain/Loss",
+        }
+    )
+
+    fig3 = px.bar(
+        df_plot,
+        x="value",
+        y="ticker",
+        color="component",
+        orientation="h",
+        text_auto=text_auto,
+        category_orders={
+            "component": ["Open Cost Basis", "All Gain/Loss"],
+        },
+    )
+    fig3.update_layout(barmode="relative", legend_title_text=None)
     fig3.update_xaxes(title=label)
     fig3.update_yaxes(categoryorder="total ascending", title=None)
     st.plotly_chart(fig3, width="content")
 
     st.divider()
-
-    # c1, c2 = st.columns(2)
-    # with c1:
-    #     by_asset = (
-    #         df.groupby("asset_class")["market_value"].sum()
-    #         .sort_values(ascending=False).reset_index()
-    #     )
-    #     fig = px.pie(
-    #         by_asset, names="asset_class", values="market_value", hole=0.55,
-    #         title="Allocation by Asset Class",
-    #     )
-    #     fig.update_traces(textinfo="percent+label")
-    #     st.plotly_chart(fig, width="content")
-
-    # with c2:
-    #     by_sector = (
-    #         df.groupby("sector")["market_value"].sum()
-    #         .sort_values(ascending=False).reset_index()
-    #     )
-    #     fig2 = px.pie(
-    #         by_sector, names="sector", values="market_value", hole=0.55,
-    #         title="Allocation by Sector",
-    #     )
-    #     fig2.update_traces(textinfo="percent+label")
-    #     st.plotly_chart(fig2, width="content")

@@ -1,4 +1,5 @@
 import streamlit as st
+
 from pages.utils.database import (
     apply_stock_split,
     get_connection,
