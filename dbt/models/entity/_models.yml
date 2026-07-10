@@ -66,12 +66,16 @@ models:
         description: "Gain or loss of the portfolio position (market_value - cost_basis)."
       - name: benchmark_shares
         description: "Number of shares of a benchmark index (CSPX.L) that could have been purchased with the cost basis of the portfolio position."
+      - name: benchmark_latest_date
+        description: "Latest date of the benchmark index (CSPX.L) price."
       - name: benchmark_market_value
         description: "Market value of a benchmark index (CSPX.L) for comparison purposes."
       - name: benchmark_gain_loss
         description: "Gain or loss of a benchmark index (CSPX.L) for comparison purposes."
       - name: performance_against_benchmark
         description: "Performance of the portfolio position against a benchmark index (CSPX.L)."
+      - name: is_up_to_date_benchmark
+        description: "Boolean indicating whether the benchmark index (CSPX.L) data is up to date."
       - name: is_open_position
         description: "Boolean indicating whether the portfolio position is open."
       - name: position_last_edited
