@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import logging
 import os
+import re
 import time
 from typing import (
     Any,
@@ -45,7 +46,9 @@ class MarketDataClient(BaseModel):
         """
         if not tickers:
             return set()
-        return set([ticker for ticker in tickers if ".AS" in ticker])
+        return {
+            ticker for ticker in tickers if re.search(r"\.AS$", ticker, re.IGNORECASE)
+        }
 
     def _call_and_parse_yfinance_prices(
         self,

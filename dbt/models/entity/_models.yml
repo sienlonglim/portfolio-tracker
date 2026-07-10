@@ -64,10 +64,14 @@ models:
         description: "Percentage of the total market value represented by this position, partitioned by open/closed positions."
       - name: gain_loss
         description: "Gain or loss of the portfolio position (market_value - cost_basis)."
+      - name: benchmark_shares
+        description: "Number of shares of a benchmark index (CSPX.L) that could have been purchased with the cost basis of the portfolio position."
       - name: benchmark_market_value
-        description: "Market value of a benchmark index (CSPX.AS) for comparison purposes."
+        description: "Market value of a benchmark index (CSPX.L) for comparison purposes."
       - name: benchmark_gain_loss
-        description: "Gain or loss of a benchmark index (CSPX.AS) for comparison purposes."
+        description: "Gain or loss of a benchmark index (CSPX.L) for comparison purposes."
+      - name: performance_against_benchmark
+        description: "Performance of the portfolio position against a benchmark index (CSPX.L)."
       - name: is_open_position
         description: "Boolean indicating whether the portfolio position is open."
       - name: position_last_edited

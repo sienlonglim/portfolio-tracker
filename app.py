@@ -12,8 +12,20 @@ from pages.visualisations.positions import visualisation_tab
 
 # --- Tabs ------------------------------------------------------------------
 def positions_tab(con):
-    st.subheader("Positions")
-    st.caption("Edit cells, add rows, or delete rows.")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("Positions")
+        st.caption("Edit cells, add rows, or delete rows.")
+    with col2:
+        with st.container(horizontal=True, horizontal_alignment="right"):
+            if st.button(
+                "🔄 Refresh",
+                type="primary",
+                use_container_width=False,
+                help="Clear cache and refresh data",
+            ):
+                st.cache_data.clear()
+                st.rerun()
 
     if "df_split_preview" not in st.session_state:
         st.session_state.df_split_preview = None
@@ -83,9 +95,9 @@ def positions_tab(con):
                     st.session_state.df_split_preview = None
                     st.session_state.split_applied = False
                     st.success(
-                        "Saved. Remember to rerun price data to get split adjusted prices."
+                        "Saved. Remember to rerun price data to get split adjusted prices.",
+                        icon="✅",
                     )
-                    st.rerun()
                 except Exception as e:
                     st.error(f"Save failed: {e}")
 
@@ -98,8 +110,7 @@ def positions_tab(con):
         if st.button("💾 Save current edits to MotherDuck", type="primary"):
             try:
                 save_positions(con, df_edited)
-                st.success("Saved.")
-                st.rerun()
+                st.success("Saved.", icon="✅")
             except Exception as e:
                 st.error(f"Save failed: {e}")
 
