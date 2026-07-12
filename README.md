@@ -49,6 +49,11 @@ Headless
 dg launch --job <job_name> # job_dbt_build or job_ingest_daily_stock_prices
 ```
 
+## Running Streamlit App
+```shell
+streamlit run Home.py
+```
+
 ## Running LightDash
 
 TBC

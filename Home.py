@@ -124,14 +124,14 @@ def main():
 
     con = get_connection()
 
-    st.title("📈 Stock Positions")
+    st.title("📈 Stock Position Management")
     with st.sidebar:
         st.write(f"Signed in as **{st.secrets['auth']['username']}**")
         if st.button("Sign out"):
             st.session_state.clear()
             st.rerun()
 
-    tab_pos, tab_viz = st.tabs(["Positions", "Visualisation"])
+    tab_pos, tab_viz = st.tabs(["Position", "Visualisation"])
     with tab_pos:
         positions_tab(con)
     with tab_viz:
