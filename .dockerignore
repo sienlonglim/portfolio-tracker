@@ -1,0 +1,44 @@
+# Version control
+.git
+.gitignore
+.hg
+.svn
+
+# Build tools and local configurations
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Local dependencies and packages
+node_modules/
+jspm_packages/
+web_modules/
+.venv/
+env/
+venv/
+.nenv/
+
+# Production builds and caches
+dist/
+build/
+out/
+.npm
+.eslintcache
+.parcel-cache
+
+# Logs, diagnostics, and temporary files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.tmp/
+temp/
+
+# Secrets and environment variables
+*.env
+*.env.*
+!*.env.example
+secrets.txt
