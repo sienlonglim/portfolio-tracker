@@ -1,0 +1,131 @@
+version: '3.7'
+name: portfolio-tracker-app
+services:
+  # This service runs the Streamlit app which connects to MotherDuck and shows visuals
+  streamlit_app:
+      build:
+        context: ..  # Use the root directory as the build context, will look for DockerFile if dockerfile is not specified
+        dockerfile: docker/Dockerfile_streamlit
+      ports:
+        - "8501:8501"
+      environment:
+        MOTHERDUCK_DB_PATH: ${MOTHERDUCK_DB_PATH:?db path required}
+        MOTHERDUCK_TOKEN: ${MOTHERDUCK_TOKEN:?token required}
+      volumes:
+        - ..:/app  # Mount the current directory to /app in the container
+        - /app/.venv  # Persist
+
+  # This service runs the postgres DB used by dagster for run storage, schedule storage,
+  # and event log storage. Depending on the hardware you run this Compose on, you may be able
+  # to reduce the interval and timeout in the healthcheck to speed up your `docker compose up` times.
+  docker_postgresql:
+    image: postgres:11
+    container_name: docker_postgresql
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - dagster_postgres_data:/var/lib/postgresql/data
+    networks:
+      - docker_network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 10s
+      timeout: 8s
+      retries: 5
+
+  # This service runs the gRPC server that loads your user code, in both dagster-webserver
+  # and dagster-daemon. By setting DAGSTER_CURRENT_IMAGE to its own image, we tell the
+  # run launcher to use this same image when launching runs in a new container as well.
+  # Multiple containers like this can be deployed separately - each just needs to run on
+  # its own port, and have its own entry in the workspace.yaml file that's loaded by the
+  # webserver.
+
+  docker_user_code:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile_user_code
+    container_name: docker_user_code
+    image: docker_user_code_image
+    restart: always
+    environment:
+      DAGSTER_POSTGRES_USER: ${POSTGRES_USER}
+      DAGSTER_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DAGSTER_POSTGRES_DB: ${POSTGRES_DB}
+      DAGSTER_POSTGRES_HOST: 'docker_postgresql'
+      DAGSTER_CURRENT_IMAGE: 'docker_user_code_image'
+    networks:
+      - docker_network
+
+  # This service runs dagster-webserver, which loads your user code from the user code container.
+  # Since our instance uses the QueuedRunCoordinator, any runs submitted from the webserver will be put on
+  # a queue and later dequeued and launched by dagster-daemon.
+
+  docker_webserver:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile_dagster
+    entrypoint:
+      - dagster-webserver
+      - -h
+      - '0.0.0.0'
+      - -p
+      - '3000'
+      - -w
+      - workspace.yaml
+    container_name: docker_webserver
+    expose:
+      - '3000'
+    ports:
+      - '3000:3000'
+    environment:
+      DAGSTER_POSTGRES_USER: ${POSTGRES_USER}
+      DAGSTER_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DAGSTER_POSTGRES_DB: ${POSTGRES_DB}
+      DAGSTER_POSTGRES_HOST: 'docker_postgresql'
+    volumes: # Make docker client accessible so we can terminate containers from the webserver
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/io_manager_storage:/tmp/io_manager_storage
+    networks:
+      - docker_network
+    depends_on:
+      docker_postgresql:
+        condition: service_healthy
+      docker_user_code:
+        condition: service_healthy
+
+  # This service runs the dagster-daemon process, which is responsible for taking runs
+  # off of the queue and launching them, as well as creating runs from schedules or sensors.
+  docker_daemon:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile_dagster
+    entrypoint:
+      - dagster-daemon
+      - run
+    container_name: docker_daemon
+    restart: on-failure
+    environment:
+      DAGSTER_POSTGRES_USER: ${POSTGRES_USER}
+      DAGSTER_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DAGSTER_POSTGRES_DB: ${POSTGRES_DB}
+      DAGSTER_POSTGRES_HOST: 'docker_postgresql'
+    volumes: # Make docker client accessible so we can launch containers using host docker
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/io_manager_storage:/tmp/io_manager_storage
+    networks:
+      - docker_network
+    depends_on:
+      docker_postgresql:
+        condition: service_healthy
+      # docker_user_code:
+      #   condition: service_started
+
+networks:
+  docker_network:
+    driver: bridge
+    name: docker_network
+
+volumes:
+  dagster_postgres_data:

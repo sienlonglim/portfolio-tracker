@@ -1,3 +1,8 @@
+# Ad-hoc
+.tmp*
+*.DS_Store
+*seed_portfolio_positions.csv
+
 # Version control
 .git
 .gitignore
@@ -42,3 +47,8 @@ temp/
 *.env.*
 !*.env.example
 secrets.txt
+
+# Python specific
+__pycache__
+*.pyc
+.pytest_cache

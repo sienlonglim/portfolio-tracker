@@ -1,0 +1,18 @@
+FROM python:3.11.15-slim
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+ENV UV_COMPILE_BYTECODE=1
+
+WORKDIR /opt/dagster/app
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-cache --no-install-project
+
+# Put the venv's executables (dagster, dagster-webserver, etc.) on PATH
+ENV PATH="/opt/dagster/app/.venv/bin:$PATH"
+
+# Set $DAGSTER_HOME and copy dagster.yaml and workspace.yaml there
+ENV DAGSTER_HOME=/opt/dagster/dagster_home/
+RUN mkdir -p $DAGSTER_HOME
+COPY dagster.yaml workspace.yaml $DAGSTER_HOME
+
+WORKDIR $DAGSTER_HOME

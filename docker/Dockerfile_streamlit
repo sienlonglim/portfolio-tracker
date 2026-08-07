@@ -4,14 +4,19 @@ FROM python:3.11.15-slim
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 ENV UV_COMPILE_BYTECODE=1
 
-# Install dependencies
-USER python:user
 
+# Install dependencies and add the virtual environment to PATH
 WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-cache --no-install-project
 ENV PATH="/app/.venv/bin:$PATH"
 
+# Copy the application code into the container
 COPY . ./
 
+# Create a non-root user to run the application
+RUN useradd --create-home appuser && chown -R appuser:appuser /app
+USER appuser
+
+# Start the sreamlit application on port 8501 and bind to all network interfaces
 CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
