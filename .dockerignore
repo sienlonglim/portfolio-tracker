@@ -2,6 +2,7 @@
 .tmp*
 *.DS_Store
 *seed_portfolio_positions.csv
+.venv
 
 # Version control
 .git

@@ -1,0 +1,19 @@
+FROM python:3.11.15-slim
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+ENV UV_COMPILE_BYTECODE=1
+
+WORKDIR /opt/dagster/app
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-cache --group code-location --no-install-project
+
+
+COPY orchestration/dagster/ /opt/dagster/app
+
+# Run dagster code server on port 4000
+EXPOSE 4000
+
+HEALTHCHECK --timeout=1s --start-period=3s --interval=3s --retries=20 CMD ["dagster", "api", "grpc-health-check", "-p", "4000"]
+
+# CMD allows this to be overridden from run launchers or executors to execute runs and steps
+CMD ["dagster", "code-server", "start", "-h", "0.0.0.0", "-p", "4000", "-f", "definitions.py"]

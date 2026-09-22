@@ -4,30 +4,46 @@ version = "0.1.0"
 description = "Repo for end to end portfolio tracking and scoring"
 readme = "README.md"
 requires-python = ">=3.11.15"
+
 dependencies = [
     "dagster>=1.13.9",
-    "dagster-aws>=0.29.9",
-    "dagster-dbt>=0.29.9",
-    "dagster-dg-cli>=1.13.9",
-    "dagster-duckdb>=0.29.9",
-    "dagster-webserver>=1.13.9",
-    "dbt-core>=1.11.11",
-    "dbt-duckdb>=1.10.1",
+    "dagster-postgres>=0.29.17",
+    "dagster-docker>=0.29.17",
     "duckdb>=1.5.3",
-    "eodhd>=1.0.32",
-    "nodeenv>=1.10.0",
     "pandas>=3.0.3",
-    "plotly>=6.8.0",
     "pyarrow>=24.0.0",
-    "streamlit>=1.58.0",
-    "yfinance>=1.4.1",
 ]
 
+[tool.uv]
+default-groups = []
+
 [dependency-groups]
+host = [
+    "dagster-graphql>=1.13.9",
+    "dagster-webserver>=1.13.9",
+]
+code-location = [
+    "dagster-aws>=0.29.9",
+    "dagster-dbt>=0.29.9",
+    "dagster-duckdb>=0.29.9",
+    "dbt-core>=1.11.11",
+    "dbt-duckdb>=1.10.1",
+    "eodhd>=1.0.32",
+    "yfinance>=1.4.1",
+]
+dashboard = [
+    "plotly>=6.8.0",
+    "streamlit>=1.58.0",
+]
 dev = [
+    { include-group = "host" },
+    { include-group = "code-location" },
+    { include-group = "dashboard" },
+    "dagster-dg-cli>=1.13.9",
     "google-auth>=2.55.1",
     "gspread>=6.2.1",
     "ipykernel>=7.3.0",
+    "nodeenv>=1.10.0",
 ]
 
 [tool.dg]

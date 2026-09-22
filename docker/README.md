@@ -1,5 +1,15 @@
 # Docker
 
+## Required EnvVars in `.env`
+
+```bash
+MOTHERDUCK_DB_PATH=
+MOTHERDUCK_TOKEN=
+POSTGRES_USER="dagster_postgres_user"
+POSTGRES_PASSWORD="dagster_postgres_password"
+POSTGRES_DB="dagster_postgres_db"
+```
+
 ## Full steps for single Docker container setup on `streamlit_app`
 
 ```bash
@@ -23,21 +33,23 @@ View the resolved compose configs
 ```bash
 # From project root
 docker compose -f docker/docker-compose.yml --env-file docker/.env.production config
+# Or cd into docker and run simpler commands
+docker compose config
 ```
 
 ```bash
 # Builds all services
-docker compose -f docker/docker-compose.yml --env-file docker/.env.production up
-docker compose -f docker/docker-compose.yml --env-file docker/.env.production up --build <service_name>
+docker compose up
+docker compose up --build <service_name>
 ```
 
 ```bash
 # Shell into any service
-docker compose -f docker/docker-compose.yml --env-file docker/.env.production exec <service_name> bash
+docker compose exec <service_name> bash
 ```
 
 ```bash
 # Stop + remove containers and the network, keep volumes
-docker compose -f docker/docker-compose.yml --env-file docker/.env.production down
-docker compose -f docker/docker-compose.yml --env-file docker/.env.production down <service_name> # add -v to drop volumes
+docker compose down
+docker compose down <service_name> # add -v to drop volumes
 ```

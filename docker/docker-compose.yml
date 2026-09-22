@@ -12,7 +12,7 @@ services:
         MOTHERDUCK_DB_PATH: ${MOTHERDUCK_DB_PATH:?db path required}
         MOTHERDUCK_TOKEN: ${MOTHERDUCK_TOKEN:?token required}
       volumes:
-        - ..:/app  # Mount the current directory to /app in the container
+        - ..:/app  # Mount the current directory to /app in the container, should comment out in production
         - /app/.venv  # Persist
 
   # This service runs the postgres DB used by dagster for run storage, schedule storage,
