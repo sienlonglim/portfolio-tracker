@@ -17,16 +17,15 @@ def positions_tab(con):
     with col1:
         st.subheader("Positions")
         st.caption("Edit cells, add rows, or delete rows.")
-    with col2:
-        with st.container(horizontal=True, horizontal_alignment="right"):
-            if st.button(
-                "🔄 Refresh",
-                type="primary",
-                use_container_width=False,
-                help="Clear cache and refresh data",
-            ):
-                st.cache_data.clear()
-                st.rerun()
+    with col2, st.container(horizontal=True, horizontal_alignment="right"):
+        if st.button(
+            "🔄 Refresh",
+            type="primary",
+            use_container_width=False,
+            help="Clear cache and refresh data",
+        ):
+            st.cache_data.clear()
+            st.rerun()
 
     if "df_split_preview" not in st.session_state:
         st.session_state.df_split_preview = None

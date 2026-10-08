@@ -12,8 +12,8 @@ services:
         MOTHERDUCK_DB_PATH: ${MOTHERDUCK_DB_PATH:?db path required}
         MOTHERDUCK_TOKEN: ${MOTHERDUCK_TOKEN:?token required}
       volumes:
-        - ..:/app  # Mount the current directory to /app in the container, should comment out in production
-        - /app/.venv  # Persist
+        - ..:/app  # Bind mount the current directory to /app in the container, should comment out in production, this will hide the actual /app directory inside the container
+        - streamlit_venv:/app/.venv  # Persist the .venv volume to avoid the bind mount .venv from overriding
 
   # This service runs the postgres DB used by dagster for run storage, schedule storage,
   # and event log storage. Depending on the hardware you run this Compose on, you may be able
@@ -45,7 +45,7 @@ services:
   docker_user_code:
     build:
       context: ..
-      dockerfile: docker/Dockerfile_user_code
+      dockerfile: docker/Dockerfile_code_location
     container_name: docker_user_code
     image: docker_user_code_image
     restart: always
@@ -129,3 +129,4 @@ networks:
 
 volumes:
   dagster_postgres_data:
+  streamlit_venv:

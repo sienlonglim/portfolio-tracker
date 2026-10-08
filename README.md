@@ -8,7 +8,13 @@ If you need to install `uv`, refer to this [page](https://docs.astral.sh/uv/gett
 Sync with dependencies and create `.venv`
 
 ```shell
-uv sync
+uv sync  --active
+```
+
+or if syncing a specific group of dependencies
+
+```shell
+uv sync --active --group dev
 ```
 
 For LightDash, a virtual environment for node and npm are recommended.
@@ -52,3 +58,10 @@ dg launch --job <job_name> # job_dbt_build or job_ingest_daily_stock_prices
 ## Running LightDash
 
 TBC
+
+## Running the Streamlit portfolio dashboard
+
+```bash
+uv sync --active --group dashboard
+streamlit run app.py
+```

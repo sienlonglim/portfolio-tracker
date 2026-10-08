@@ -3,6 +3,7 @@
 *.DS_Store
 *seed_portfolio_positions.csv
 .venv
+.local
 
 # Version control
 .git
