@@ -82,6 +82,29 @@ models:
         description: "Timestamp of the last edit to the portfolio position."
         data_tests:
           - not_null
+  - name: fct_portfolio_cash_flows
+    description: "Cash flow for portfolio to identify total cash deployed and cash at hand by each trade."
+    columns:
+      - name: holder
+        description: "Holder of the portfolio position."
+      - name: event_date
+        description: "Date of the buy or sell event."
+      - name: event_type
+        description: "BUY or SELL event."
+      - name: same_day_order_precedence
+        description: Same day order resolution where SELLs always come first before BUYs
+      - name: id
+        description: "ID of the trade."
+      - name: ticker
+        description: "Unique identifier for the stock."
+      - name: cash_flow
+        description: "Cash flow, direction relative to holder's cash pool, negative for BUYs, positive for SELLs."
+      - name: new_cash_added
+        description: "Cash added to portfolio."
+      - name: cash_deployed
+        description: "Cumulative cash deployed into the market."
+      - name: cash_pool
+        description: "Current cash pool."
   - name: fct_stock_open_close_prices
     description: "Daily stock prices and volumes."
     columns:

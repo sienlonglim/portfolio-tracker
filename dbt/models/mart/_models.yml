@@ -1,6 +1,17 @@
 version: 2
 
 models:
+  - name: portfolio_cash_flows_daily
+    description: "Summarised daily cash flow for each holder's portfolio."
+    columns:
+      - name: holder
+        description: "Holder of the portfolio position."
+      - name: event_date
+        description: "Date of the buy or sell event."
+      - name: cash_deployed
+        description: "Cumulative cash deployed into the market."
+      - name: cash_pool
+        description: "Current cash pool."
   - name: portfolio_gain_loss_overtime
     description: "Portfolio positions with gains and losses over time."
     columns:
